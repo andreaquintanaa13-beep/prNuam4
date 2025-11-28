@@ -7,4 +7,4 @@ PyPDF2==3.0.1
 python-dotenv==1.0.0
 pillow==10.2.0
 mysqlclient==2.2.0
-dj-database-url==2.1.0S
+dj-database-url==2.1.0
