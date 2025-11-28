@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Agregar Calificación - NUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --naranja-claro: #F39C12;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+        }
+        
+        body { 
+            background-color: var(--gris-claro); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+        
+        .card-dashboard {
+            background: var(--blanco);
+            border: none;
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-nuam { 
+            background-color: var(--naranja-oscuro); 
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-nuam:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-agregar { 
+            background-color: var(--naranja-claro);
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-agregar:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-outline-nuam { 
+            border: 1px solid var(--naranja-oscuro); 
+            color: var(--naranja-oscuro); 
+            font-weight: 600;
+        }
+        
+        .btn-outline-nuam:hover { 
+            background-color: var(--naranja-oscuro); 
+            color: white; 
+        }
+        
+        .welcome-section {
+            background: var(--naranja-oscuro);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+        
+        .form-control:focus {
+            border-color: var(--naranja);
+            box-shadow: 0 0 0 0.2rem rgba(211, 84, 0, 0.25);
+        }
+        
+        .required-field::after {
+            content: " *";
+            color: #dc3545;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--texto-oscuro);
+            margin-bottom: 0.5rem;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">NUAM - Agregar Calificación</span>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    {{ request.session.usuario_nombre }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="welcome-section">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="display-6">Agregar Calificación Tributaria</h1>
+                        <p class="mb-0">Complete los datos para ingresar una nueva calificación</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mostrar mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Formulario de Agregar Calificación -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-dashboard">
+                <div class="card-header" style="background: var(--naranja-oscuro); color: white;">
+                    <h5 class="mb-0">Datos de la Calificación Tributaria</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <!-- Primera Fila -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Mercado</label>
+                                <select name="mercado" class="form-control" required>
+                                    <option value="">Seleccionar mercado</option>
+                                    <option value="ACC">Acciones</option>
+                                    <option value="CFI">CFI</option>
+                                    <option value="FM">Fondos Mutuos</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Instrumento</label>
+                                <input type="text" name="instrumento" class="form-control" maxlength="50" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Secuencia Evento</label>
+                                <input type="number" name="secuencia_evento" class="form-control" min="10000" required>
+                            </div>
+                        </div>
+
+                        <!-- Segunda Fila -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Dividendo</label>
+                                <input type="number" name="dividendo" class="form-control" step="0.000001" value="0">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Fecha de Pago</label>
+                                <input type="date" name="fecha" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Valor Histórico</label>
+                                <input type="number" name="valor_historico" class="form-control" step="0.00000001">
+                            </div>
+                        </div>
+
+                        <!-- Tercera Fila -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Año Comercial</label>
+                                <input type="number" name="ano" class="form-control" min="2000" max="2030" value="2025" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label required-field">Descripción</label>
+                                <input type="text" name="descripcion" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Factor de Actualización</label>
+                                <input type="number" name="factor_actualizado" class="form-control" step="0.00000001" value="0">
+                            </div>
+                        </div>
+
+                        <!-- Checkbox -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="acogido_isfut" id="acogido_isfut">
+                                    <label class="form-check-label" for="acogido_isfut">
+                                        Acogido a ISFUT/ISIFT
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'dashboard_corredor' %}" class="btn btn-outline-nuam me-3">
+                                CANCELAR
+                            </a>
+                            <button type="submit" class="btn btn-agregar">
+                                INGRESAR CALIFICACIÓN
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

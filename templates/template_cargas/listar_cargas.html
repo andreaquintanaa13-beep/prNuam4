@@ -1,0 +1,363 @@
+<!-- templates/template_cargas/template_listado_cargas.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado de Cargas - NUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --naranja-claro: #F39C12;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+        }
+        
+        body { 
+            background-color: var(--gris-claro); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+        
+        .card-dashboard {
+            background: var(--blanco);
+            border: none;
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-nuam { 
+            background-color: var(--naranja-oscuro); 
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-nuam:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-agregar { 
+            background-color: var(--naranja-claro);
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-agregar:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-outline-nuam { 
+            border: 1px solid var(--naranja-oscuro); 
+            color: var(--naranja-oscuro); 
+            font-weight: 600;
+        }
+        
+        .btn-outline-nuam:hover { 
+            background-color: var(--naranja-oscuro); 
+            color: white; 
+        }
+        
+        .welcome-section {
+            background: var(--naranja-oscuro);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+        
+        .stats-card {
+            background: var(--blanco);
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-card.total { border-top: 4px solid var(--naranja-oscuro); }
+        .stats-card.completadas { border-top: 4px solid #28a745; }
+        .stats-card.procesando { border-top: 4px solid #ffc107; }
+        .stats-card.error { border-top: 4px solid #dc3545; }
+        
+        .table-custom th {
+            background-color: var(--naranja-oscuro);
+            color: white;
+        }
+        
+        .badge-factores {
+            background-color: var(--naranja-oscuro);
+        }
+        
+        .badge-montos {
+            background-color: #17a2b8;
+        }
+        
+        .badge-calificaciones {
+            background-color: #6f42c1;
+        }
+        
+        .badge-completado {
+            background-color: #28a745;
+        }
+        
+        .badge-procesando {
+            background-color: #ffc107;
+            color: #000;
+        }
+        
+        .badge-error {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">
+                <i class="fas fa-list-check"></i> NUAM - Listado de Cargas
+            </span>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    <i class="fas fa-user"></i> 
+                    {% if request.session.nombre %}
+                        {{ request.session.nombre }}
+                    {% else %}
+                        Usuario
+                    {% endif %}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="welcome-section">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h1 class="display-6"><i class="fas fa-list-check"></i> Listado de Cargas Masivas</h1>
+                            <p class="mb-0">Historial de todas las cargas realizadas en el sistema</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mostrar mensajes -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %}"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Estadísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card total h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-database fa-2x text-primary mb-2"></i>
+                        <h5 class="card-title">Total Cargas</h5>
+                        <h3 class="text-primary">{{ total_cargas }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card completadas h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <h5 class="card-title">Completadas</h5>
+                        <h3 class="text-success">{{ cargas_completadas }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card procesando h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-sync-alt fa-2x text-warning mb-2"></i>
+                        <h5 class="card-title">Procesando</h5>
+                        <h3 class="text-warning">{{ cargas_procesando }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card error h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                        <h5 class="card-title">Con Error</h5>
+                        <h3 class="text-danger">{{ cargas_error }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card card-dashboard mb-4">
+            <div class="card-header" style="background: var(--naranja-oscuro); color: white;">
+                <h5 class="mb-0"><i class="fas fa-filter"></i> Filtros</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Tipo de Archivo</label>
+                        <select name="tipo" class="form-select">
+                            <option value="">Todos los tipos</option>
+                            <option value="factores" {% if tipo_filtro == 'factores' %}selected{% endif %}>Factores</option>
+                            <option value="montos" {% if tipo_filtro == 'montos' %}selected{% endif %}>Montos</option>
+                            <option value="calificaciones" {% if tipo_filtro == 'calificaciones' %}selected{% endif %}>Calificaciones</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Estado</label>
+                        <select name="estado" class="form-select">
+                            <option value="">Todos los estados</option>
+                            <option value="completado" {% if estado_filtro == 'completado' %}selected{% endif %}>Completado</option>
+                            <option value="procesando" {% if estado_filtro == 'procesando' %}selected{% endif %}>Procesando</option>
+                            <option value="error" {% if estado_filtro == 'error' %}selected{% endif %}>Error</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-nuam me-2">
+                            <i class="fas fa-search"></i> Filtrar
+                        </button>
+                        <a href="{% url 'listado_cargas' %}" class="btn btn-outline-nuam">
+                            <i class="fas fa-refresh"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de Cargas -->
+        <div class="card card-dashboard">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: var(--naranja-oscuro); color: white;">
+                <h5 class="mb-0"><i class="fas fa-table"></i> Historial de Cargas</h5>
+                <div>
+                    <a href="{% url 'carga_factores' %}" class="btn btn-agregar btn-sm">
+                        <i class="fas fa-calculator"></i> Factores
+                    </a>
+                    <a href="{% url 'carga_montos' %}" class="btn btn-agregar btn-sm">
+                        <i class="fas fa-money-bill-wave"></i> Montos
+                    </a>
+                    <a href="{% url 'carga_masiva_calificaciones' %}" class="btn btn-agregar btn-sm">
+                        <i class="fas fa-star"></i> Calificaciones
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if cargas %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-custom">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tipo</th>
+                                <th>Archivo</th>
+                                <th>Fecha Carga</th>
+                                <th>Usuario</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for carga in cargas %}
+                            <tr>
+                                <td><strong>#{{ carga.id_archivo }}</strong></td>
+                                <td>
+                                    {% if carga.tipo_archivo == 'factores' %}
+                                        <span class="badge badge-factores"><i class="fas fa-calculator"></i> Factores</span>
+                                    {% elif carga.tipo_archivo == 'montos' %}
+                                        <span class="badge badge-montos"><i class="fas fa-money-bill-wave"></i> Montos</span>
+                                    {% else %}
+                                        <span class="badge badge-calificaciones"><i class="fas fa-star"></i> Calificaciones</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ carga.archivo_url|default:"N/A" }}</small>
+                                </td>
+                                <td>{{ carga.fecha_carga|date:"d/m/Y H:i" }}</td>
+                                <td>{{ carga.fk_id_usuario.nombre }}</td>
+                                <td>
+                                    {% if carga.estado == 'completado' %}
+                                        <span class="badge badge-completado"><i class="fas fa-check"></i> Completado</span>
+                                    {% elif carga.estado == 'procesando' %}
+                                        <span class="badge badge-procesando"><i class="fas fa-sync-alt"></i> Procesando</span>
+                                    {% else %}
+                                        <span class="badge badge-error"><i class="fas fa-exclamation-triangle"></i> Error</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'detalles_carga' carga.id_archivo %}" 
+                                       class="btn btn-sm btn-outline-nuam" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if carga.estado == 'completado' %}
+                                    <a href="{% url 'descargar_carga' carga.id_archivo %}"
+                                       class="btn btn-sm btn-outline-nuam"
+                                       data-bs-toggle="tooltip"
+                                       title="Descargar reporte">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No hay cargas registradas</h4>
+                    <p class="text-muted">Realiza tu primera carga masiva para ver el historial aquí.</p>
+                    <a href="{% url 'carga_factores' %}" class="btn btn-nuam">
+                        <i class="fas fa-plus"></i> Comenzar Primera Carga
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Botones de Navegación -->
+        <div class="mt-4 text-center">
+            <a href="{% if request.session.rol == 'admin' %}{% url 'dashboard_admin' %}{% else %}{% url 'dashboard_corredor' %}{% endif %}" 
+               class="btn btn-outline-nuam">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Activar tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    </script>
+</body>
+</html>

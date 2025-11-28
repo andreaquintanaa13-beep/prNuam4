@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Calificación - NUAM</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+        }
+        
+        body {
+            background-color: var(--gris-claro);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+        
+        .card-nuam {
+            background: var(--blanco);
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .btn-nuam {
+            background-color: var(--naranja-oscuro);
+            border: none;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .btn-nuam:hover {
+            background-color: var(--naranja);
+        }
+        
+        .btn-cancelar {
+            background-color: #6c757d;
+            border: none;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .form-control:focus {
+            border-color: var(--naranja-oscuro);
+            box-shadow: 0 0 0 0.25rem rgba(211, 84, 0, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">NUAM - Editar Calificación</span>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    {{ request.session.usuario_nombre }}
+                </span>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-light">Volver al Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card card-nuam">
+                    <div class="card-header" style="background: var(--naranja-oscuro); color: white;">
+                        <h5 class="card-title mb-0">✏️ Editar Calificación</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="fecha" class="form-label">📅 Fecha</label>
+                                    <input type="date" class="form-control" id="fecha" name="fecha" 
+                                           value="{{ calificacion.fecha|date:'Y-m-d' }}" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="mercado" class="form-label">🏪 Mercado</label>
+                                    <select class="form-control" id="mercado" name="mercado" required>
+                                        <option value="Mercado Local" {% if calificacion.mercado == "Mercado Local" %}selected{% endif %}>Mercado Local</option>
+                                        <option value="Mercado Regional" {% if calificacion.mercado == "Mercado Regional" %}selected{% endif %}>Mercado Regional</option>
+                                        <option value="Mercado Nacional" {% if calificacion.mercado == "Mercado Nacional" %}selected{% endif %}>Mercado Nacional</option>
+                                        <option value="Mercado Internacional" {% if calificacion.mercado == "Mercado Internacional" %}selected{% endif %}>Mercado Internacional</option>
+                                        <option value="Mercado Emergente" {% if calificacion.mercado == "Mercado Emergente" %}selected{% endif %}>Mercado Emergente</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="ano" class="form-label">📊 Año</label>
+                                    <input type="number" class="form-control" id="ano" name="ano" 
+                                           value="{{ calificacion.ano }}" min="2000" max="2030" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="factor_actualizado" class="form-label">📈 Factor Actualizado</label>
+                                    <input type="number" step="0.0001" class="form-control" id="factor_actualizado" 
+                                           name="factor_actualizado" value="{{ calificacion.factor_actualizado|default:'' }}" 
+                                           placeholder="Ej: 1.2500">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="descripcion" class="form-label">📝 Descripción</label>
+                                <textarea class="form-control" id="descripcion" name="descripcion" 
+                                          rows="4" placeholder="Descripción de la calificación...">{{ calificacion.descripcion|default:'' }}</textarea>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{% url 'dashboard' %}" class="btn btn-cancelar me-2">Cancelar</a>
+                                <button type="submit" class="btn btn-nuam">Actualizar Calificación</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

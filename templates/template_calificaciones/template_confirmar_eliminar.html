@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmar Eliminación - NUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --naranja-claro: #F39C12;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+        }
+        
+        body { 
+            background-color: var(--gris-claro); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+        
+        .card-dashboard {
+            background: var(--blanco);
+            border: none;
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-danger { 
+            background-color: #dc3545; 
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-danger:hover { 
+            background-color: #c82333; 
+        }
+        
+        .btn-outline-nuam { 
+            border: 1px solid var(--naranja-oscuro); 
+            color: var(--naranja-oscuro); 
+            font-weight: 600;
+        }
+        
+        .btn-outline-nuam:hover { 
+            background-color: var(--naranja-oscuro); 
+            color: white; 
+        }
+        
+        .welcome-section {
+            background: var(--naranja-oscuro);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">NUAM - Confirmar Eliminación</span>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    {{ request.session.usuario_nombre }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="welcome-section">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="display-6">Confirmar Eliminación</h1>
+                        <p class="mb-0">Estás a punto de eliminar una calificación</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Confirmación -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-dashboard">
+                <div class="card-header" style="background: #dc3545; color: white;">
+                    <h5 class="mb-0">Confirmar Eliminación</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5>¿Estás seguro que deseas eliminar esta calificación?</h5>
+                        <p class="mb-0"><strong>ID:</strong> #{{ calificacion.id_calificacion }}</p>
+                        <p class="mb-0"><strong>Mercado:</strong> {{ calificacion.mercado }}</p>
+                        <p class="mb-0"><strong>Descripción:</strong> {{ calificacion.descripcion|truncatechars:50 }}</p>
+                        <p class="mb-0"><strong>Fecha:</strong> {{ calificacion.fecha }}</p>
+                        <p class="mb-0"><strong>Año:</strong> {{ calificacion.ano }}</p>
+                    </div>
+
+                    <p class="text-danger"><strong>Advertencia:</strong> Esta acción no se puede deshacer.</p>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-nuam me-3">
+                                CANCELAR
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                Si, Eliminar 
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

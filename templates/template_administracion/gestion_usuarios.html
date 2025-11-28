@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Usuarios - NUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --naranja-claro: #F39C12;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+        }
+        
+        body { 
+            background-color: var(--gris-claro); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+        
+        .card-dashboard {
+            background: var(--blanco);
+            border: none;
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-nuam { 
+            background-color: var(--naranja-oscuro); 
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-nuam:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-success { 
+            background-color: #28a745; 
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-warning { 
+            background-color: #ffc107; 
+            border: none; 
+            color: black; 
+            font-weight: 600;
+        }
+        
+        .btn-outline-nuam { 
+            border: 1px solid var(--naranja-oscuro); 
+            color: var(--naranja-oscuro); 
+            font-weight: 600;
+        }
+        
+        .btn-outline-nuam:hover { 
+            background-color: var(--naranja-oscuro); 
+            color: white; 
+        }
+        
+        .btn-outline-danger { 
+            border: 1px solid #dc3545; 
+            color: #dc3545; 
+            font-weight: 600;
+        }
+        
+        .btn-outline-danger:hover { 
+            background-color: #dc3545; 
+            color: white; 
+        }
+        
+        .welcome-section {
+            background: var(--naranja-oscuro);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+        
+        .table-custom {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .table-custom thead {
+            background-color: var(--naranja-oscuro);
+            color: white;
+        }
+        
+        .table-custom th {
+            border: none;
+            font-weight: 600;
+            padding: 1rem;
+        }
+        
+        .table-custom td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+        
+        .badge-activo {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        
+        .badge-inactivo {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        
+        .badge-admin {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        
+        .badge-corredor {
+            background-color: rgba(23, 162, 184, 0.1);
+            color: #17a2b8;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--naranja-oscuro);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">NUAM - Gestión de Usuarios</span>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    {{ request.session.usuario_nombre }} (Admin)
+                </span>
+                <div class="btn-group">
+                    <a href="{% url 'dashboard_admin' %}" class="btn btn-sm btn-outline-light me-2">
+                        Dashboard
+                    </a>
+                    <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">
+                        Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="welcome-section">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="display-6">Gestión de Usuarios</h1>
+                        <p class="mb-0">Administra todos los usuarios del sistema</p>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{% url 'dashboard_admin' %}" class="btn btn-light">
+                            ← Volver al Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mostrar mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Estadísticas y Filtros -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-3" style="color: var(--naranja-oscuro);">Filtros de Usuarios</h5>
+                            <form method="get" class="row g-3">
+                                <div class="col-md-4">
+                                    <input type="text" name="buscar" class="form-control" 
+                                           placeholder="Buscar por nombre o correo..." value="{{ buscar }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <select name="estado" class="form-control">
+                                        <option value="">Todos los estados</option>
+                                        <option value="activo" {% if estado_filter == "activo" %}selected{% endif %}>Activo</option>
+                                        <option value="inactivo" {% if estado_filter == "inactivo" %}selected{% endif %}>Inactivo</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select name="rol" class="form-control">
+                                        <option value="">Todos los roles</option>
+                                        <option value="admin" {% if rol_filter == "admin" %}selected{% endif %}>Administrador</option>
+                                        <option value="corredor" {% if rol_filter == "corredor" %}selected{% endif %}>Corredor</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-nuam w-100">Filtrar</button>
+                                </div>
+                                {% if buscar or estado_filter or rol_filter %}
+                                <div class="col-12">
+                                    <a href="{% url 'gestion_usuarios' %}" class="btn btn-outline-secondary btn-sm">
+                                        Limpiar filtros
+                                    </a>
+                                    <small class="text-muted ms-2">
+                                        Filtros activos: 
+                                        {% if buscar %}Buscar: "{{ buscar }}"{% endif %}
+                                        {% if estado_filter %}| Estado: {{ estado_filter }}{% endif %}
+                                        {% if rol_filter %}| Rol: {{ rol_filter }}{% endif %}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-dashboard">
+                <div class="card-body text-center">
+                    <div class="stat-number">{{ usuarios|length }}</div>
+                    <p class="text-muted">Usuarios {% if buscar or estado_filter or rol_filter %}filtrados{% else %}totales{% endif %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Usuarios -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-dashboard">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: var(--naranja-oscuro); color: white;">
+                    <h5 class="mb-0">Lista de Usuarios del Sistema</h5>
+                    <div>
+                        <small>Total: {{ usuarios|length }} usuarios</small>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if usuarios %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Correo</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Fecha Registro</th>
+                                    <th>Corredor Asociado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                <tr>
+                                    <td>
+                                        <strong>#{{ usuario.id_usuario }}</strong>
+                                    </td>
+                                    <td>
+                                        <strong>{{ usuario.nombre }}</strong>
+                                    </td>
+                                    <td>
+                                        <small>{{ usuario.correo }}</small>
+                                    </td>
+                                    <td>
+                                        {% if usuario.rol == 'admin' %}
+                                            <span class="badge-admin">Administrador</span>
+                                        {% else %}
+                                            <span class="badge-corredor">Corredor</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.estado == 'activo' %}
+                                            <span class="badge-activo">Activo</span>
+                                        {% else %}
+                                            <span class="badge-inactivo">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% with corredor=usuario.corredor_set.first %}
+                                                {% if corredor %}
+                                                    {{ corredor.fecha_registro|date:"d/m/Y" }}
+                                                {% else %}
+                                                    Sin corredor
+                                                {% endif %}
+                                            {% endwith %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% with corredor=usuario.corredor_set.first %}
+                                            {% if corredor %}
+                                                <span class="badge bg-success">Sí</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            {% if usuario.estado == 'inactivo' %}
+                                                <a href="{% url 'activar_usuario' usuario.id_usuario %}" 
+                                                   class="btn btn-success btn-sm">
+                                                    Activar
+                                                </a>
+                                            {% else %}
+                                                <a href="{% url 'desactivar_usuario' usuario.id_usuario %}" 
+                                                   class="btn btn-warning btn-sm">
+                                                    Desactivar
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if usuario.rol != 'admin' %}
+                                            <form method="POST" action="{% url 'eliminar_usuario' usuario.id_usuario %}" 
+                                                  style="display: inline;" 
+                                                  onsubmit="return confirm('¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer.');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    Eliminar
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <h5 class="text-muted">No hay usuarios registrados</h5>
+                        <p class="text-muted">
+                            {% if buscar or estado_filter or rol_filter %}
+                                No se encontraron usuarios con los filtros aplicados
+                            {% else %}
+                                El sistema no tiene usuarios registrados
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

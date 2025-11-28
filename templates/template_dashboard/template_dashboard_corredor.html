@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Corredor - NUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --naranja-claro: #F39C12;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+        }
+        
+        body { 
+            background-color: var(--gris-claro); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+        
+        .card-dashboard {
+            background: var(--blanco);
+            border: none;
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-nuam { 
+            background-color: var(--naranja-oscuro); 
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-nuam:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-agregar { 
+            background-color: var(--naranja-claro);
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-agregar:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-outline-nuam { 
+            border: 1px solid var(--naranja-oscuro); 
+            color: var(--naranja-oscuro); 
+            font-weight: 600;
+        }
+        
+        .btn-outline-nuam:hover { 
+            background-color: var(--naranja-oscuro); 
+            color: white; 
+        }
+        
+        .btn-outline-danger { 
+            border: 1px solid #dc3545; 
+            color: #dc3545; 
+            font-weight: 600;
+        }
+        
+        .btn-outline-danger:hover { 
+            background-color: #dc3545; 
+            color: white; 
+        }
+        
+        .welcome-section {
+            background: var(--naranja-oscuro);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+        
+        .table-custom {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .table-custom thead {
+            background-color: var(--naranja-oscuro);
+            color: white;
+        }
+        
+        .table-custom th {
+            border: none;
+            font-weight: 600;
+            padding: 1rem;
+        }
+        
+        .table-custom td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+        
+        .badge-market {
+            background-color: rgba(211, 84, 0, 0.1);
+            color: var(--naranja-oscuro);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--naranja-oscuro);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--blanco);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--naranja-oscuro);
+        }
+        
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--naranja-oscuro);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .label {
+            color: var(--texto-oscuro);
+            font-size: 0.9rem;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .action-card {
+            background: var(--blanco);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--naranja-oscuro);
+            transition: transform 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .action-card .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .action-card .title {
+            font-weight: 600;
+            color: var(--naranja-oscuro);
+            margin-bottom: 0.25rem;
+        }
+        
+        .action-card .desc {
+            font-size: 0.8rem;
+            color: var(--texto-oscuro);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">NUAM - Panel del Corredor</span>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    {{ request.session.usuario_nombre }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="welcome-section">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="display-6">Bienvenido, {{ request.session.usuario_nombre }}</h1>
+                        <p class="mb-0">Gestión de tus calificaciones tributarias</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mostrar mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Acciones Rápidas -->
+    <div class="quick-actions">
+        <a href="{% url 'agregar_calificacion' %}" class="action-card">
+            <div class="icon">➕</div>
+            <div class="title">Agregar Manual</div>
+            <div class="desc">Ingresar calificación individual</div>
+        </a>
+        
+        <!-- NUEVO BOTÓN PARA PROCESAR PDF -->
+        <a href="{% url 'extraer_datos_pdf' %}" class="action-card">
+            <div class="icon">📄</div>
+            <div class="title">Procesar PDF</div>
+            <div class="desc">Extraer datos automáticamente</div>
+        </a>
+        
+        <a href="{% url 'carga_factores' %}" class="action-card">
+            <div class="icon">📊</div>
+            <div class="title">Carga Factores</div>
+            <div class="desc">Subir factores calculados</div>
+        </a>
+        
+        <a href="{% url 'carga_montos' %}" class="action-card">
+            <div class="icon">💰</div>
+            <div class="title">Carga Montos DJ1948</div>
+            <div class="desc">Procesar montos automáticamente</div>
+        </a>
+        
+        <a href="{% url 'listado_cargas' %}" class="action-card">
+            <div class="icon">📋</div>
+            <div class="title">Historial Cargas</div>
+            <div class="desc">Ver cargas realizadas</div>
+        </a>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="number">{{ calificaciones|length }}</div>
+            <div class="label">Total Calificaciones</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ calificaciones_hoy }}</div>
+            <div class="label">Hoy</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ calificaciones_mes }}</div>
+            <div class="label">Este Mes</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ cargas_realizadas }}</div>
+            <div class="label">Cargas Realizadas</div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <h5 class="mb-3" style="color: var(--naranja-oscuro);">Filtros de Calificaciones</h5>
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <input type="text" name="buscar" class="form-control" 
+                                   placeholder="Buscar en descripción..." value="{{ buscar }}">
+                        </div>
+                        <div class="col-md-2">
+                            <select name="mercado" class="form-control">
+                                <option value="">Todos los mercados</option>
+                                <option value="ACC" {% if mercado_filter == "ACC" %}selected{% endif %}>Acciones</option>
+                                <option value="CFI" {% if mercado_filter == "CFI" %}selected{% endif %}>CFI</option>
+                                <option value="FM" {% if mercado_filter == "FM" %}selected{% endif %}>Fondos Mutuos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" name="ano" class="form-control" 
+                                   placeholder="Año" value="{{ ano_filter }}"
+                                   min="2000" max="2030">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-nuam w-100">Filtrar</button>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{% url 'dashboard_corredor' %}" class="btn btn-outline-secondary w-100">Limpiar</a>
+                        </div>
+                        {% if buscar or mercado_filter or ano_filter %}
+                        <div class="col-12">
+                            <small class="text-muted">
+                                Filtros activos: 
+                                {% if buscar %}Buscar: "{{ buscar }}"{% endif %}
+                                {% if mercado_filter %}| Mercado: {{ mercado_filter }}{% endif %}
+                                {% if ano_filter %}| Año: {{ ano_filter }}{% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Calificaciones -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-dashboard">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: var(--naranja-oscuro); color: white;">
+                    <h5 class="mb-0">Mis Calificaciones</h5>
+                    <div>
+                        <small>{{ calificaciones|length }} registros encontrados</small>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if calificaciones %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Mercado</th>
+                                    <th>Descripción</th>
+                                    <th>Año</th>
+                                    <th>Fecha</th>
+                                    <th>Factor</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for calificacion in calificaciones %}
+                                <tr>
+                                    <td>
+                                        <strong>#{{ calificacion.id_calificacion }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge-market">{{ calificacion.mercado }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium">{{ calificacion.descripcion|truncatechars:40 }}</div>
+                                        {% if calificacion.descripcion and calificacion.descripcion|length > 40 %}
+                                        <small class="text-muted">{{ calificacion.descripcion }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ calificacion.ano }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ calificacion.fecha|date:"d/m/Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">{{ calificacion.factor_actualizado|default:"-" }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'editar_calificacion' calificacion.id_calificacion %}" 
+                                               class="btn btn-outline-nuam btn-sm">
+                                                Editar
+                                            </a>
+                                            <a href="{% url 'eliminar_calificacion' calificacion.id_calificacion %}" 
+                                               class="btn btn-outline-danger btn-sm">
+                                                Eliminar
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <h5 class="text-muted">No hay calificaciones registradas</h5>
+                        <p class="text-muted">
+                            {% if buscar or mercado_filter or ano_filter %}
+                                No se encontraron calificaciones con los filtros aplicados
+                            {% else %}
+                                Comienza agregando tu primera calificación
+                            {% endif %}
+                        </p>
+                        <div class="mt-3">
+                            <a href="{% url 'agregar_calificacion' %}" class="btn btn-agregar me-2">
+                                ➕ Agregar Primera Calificación
+                            </a>
+                            <a href="{% url 'extraer_datos_pdf' %}" class="btn btn-outline-nuam me-2">
+                                📄 Procesar PDF
+                            </a>
+                            <a href="{% url 'carga_factores' %}" class="btn btn-outline-nuam">
+                                📊 Carga Masiva
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

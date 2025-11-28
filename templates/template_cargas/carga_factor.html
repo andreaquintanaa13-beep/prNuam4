@@ -1,0 +1,186 @@
+<!-- templates/template_cargas/template_carga_factores.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carga Masiva de Factores - NUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --naranja-claro: #F39C12;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+        }
+        
+        body { 
+            background-color: var(--gris-claro); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+        
+        .card-dashboard {
+            background: var(--blanco);
+            border: none;
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-nuam { 
+            background-color: var(--naranja-oscuro); 
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-nuam:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-agregar { 
+            background-color: var(--naranja-claro);
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-agregar:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-outline-nuam { 
+            border: 1px solid var(--naranja-oscuro); 
+            color: var(--naranja-oscuro); 
+            font-weight: 600;
+        }
+        
+        .btn-outline-nuam:hover { 
+            background-color: var(--naranja-oscuro); 
+            color: white; 
+        }
+        
+        .welcome-section {
+            background: var(--naranja-oscuro);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+        
+        .form-control:focus {
+            border-color: var(--naranja);
+            box-shadow: 0 0 0 0.2rem rgba(211, 84, 0, 0.25);
+        }
+        
+        .required-field::after {
+            content: " *";
+            color: #dc3545;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--texto-oscuro);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">
+                <i class="fas fa-calculator"></i> NUAM - Carga Masiva de Factores
+            </span>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    <i class="fas fa-user"></i> {{ request.session.nombre|default:"Usuario" }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="welcome-section">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h1 class="display-6"><i class="fas fa-calculator"></i> Carga Masiva de Factores</h1>
+                            <p class="mb-0">Suba un archivo CSV para cargar múltiples factores al sistema</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mostrar mensajes -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %}"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Formulario de Carga -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-dashboard">
+                    <div class="card-header" style="background: var(--naranja-oscuro); color: white;">
+                        <h5 class="mb-0"><i class="fas fa-upload"></i> Subir Archivo CSV</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="mb-4">
+                                <label for="archivo_csv" class="form-label required-field">Seleccionar archivo CSV</label>
+                                <input type="file" class="form-control" id="archivo_csv" name="archivo_csv" accept=".csv" required>
+                                <div class="form-text">
+                                    <strong>Formato requerido del CSV:</strong><br>
+                                    Columnas: <code>nombre_factor, valor_factor, fecha_inicio, fecha_fin</code><br>
+                                    <strong>Ejemplo:</strong><br>
+                                    <code>nombre_factor,valor_factor,fecha_inicio,fecha_fin</code><br>
+                                    <code>Liquidez,85,2025-01-01,2025-12-31</code><br>
+                                    <code>Solvencia,90,2025-01-01,2025-12-31</code>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{% url 'listado_cargas' %}" class="btn btn-outline-nuam me-md-2">
+                                    <i class="fas fa-list"></i> Ver Listado de Cargas
+                                </a>
+                                <a href="{% if request.session.rol == 'admin' %}{% url 'dashboard_admin' %}{% else %}{% url 'dashboard_corredor' %}{% endif %}" 
+                                   class="btn btn-outline-nuam me-md-2">
+                                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                                </a>
+                                <button type="submit" class="btn btn-agregar">
+                                    <i class="fas fa-upload"></i> Procesar Carga Masiva
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

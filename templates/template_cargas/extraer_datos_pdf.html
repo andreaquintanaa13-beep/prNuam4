@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Extraer Datos de PDF - NUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --naranja-claro: #F39C12;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+        }
+        
+        body { 
+            background-color: var(--gris-claro); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+        
+        .card-dashboard {
+            background: var(--blanco);
+            border: none;
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-nuam { 
+            background-color: var(--naranja-oscuro); 
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-nuam:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-agregar { 
+            background-color: var(--naranja-claro);
+            border: none; 
+            color: white; 
+            font-weight: 600;
+        }
+        
+        .btn-agregar:hover { 
+            background-color: var(--naranja); 
+        }
+        
+        .btn-outline-nuam { 
+            border: 1px solid var(--naranja-oscuro); 
+            color: var(--naranja-oscuro); 
+            font-weight: 600;
+        }
+        
+        .btn-outline-nuam:hover { 
+            background-color: var(--naranja-oscuro); 
+            color: white; 
+        }
+        
+        .welcome-section {
+            background: var(--naranja-oscuro);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+        
+        .table-custom {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .table-custom thead {
+            background-color: var(--naranja-oscuro);
+            color: white;
+        }
+        
+        .table-custom th {
+            border: none;
+            font-weight: 600;
+            padding: 1rem;
+        }
+        
+        .table-custom td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+        
+        .badge-market {
+            background-color: rgba(211, 84, 0, 0.1);
+            color: var(--naranja-oscuro);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed var(--naranja-oscuro);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            background-color: rgba(211, 84, 0, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .file-upload-area:hover {
+            background-color: rgba(211, 84, 0, 0.1);
+            border-color: var(--naranja);
+        }
+        
+        .file-upload-area.dragover {
+            background-color: rgba(211, 84, 0, 0.2);
+            border-color: var(--naranja-claro);
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: var(--naranja-oscuro);
+            margin-bottom: 1rem;
+        }
+        
+        .data-preview {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .format-example {
+            background: var(--gris-claro);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .checkbox-cell {
+            width: 50px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">NUAM - Procesar PDF</span>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    {{ request.session.usuario_nombre }}
+                </span>
+                <a href="{% url 'dashboard_corredor' %}" class="btn btn-sm btn-outline-light me-2">
+                    ← Volver al Dashboard
+                </a>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="welcome-section">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="display-6">Extraer Datos de PDF</h1>
+                        <p class="mb-0">Sube archivos PDF para extraer calificaciones automáticamente</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mostrar mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Formulario de Subida -->
+    <div class="row mb-4">
+        <div class="col-md-8 mx-auto">
+            <div class="card card-dashboard">
+                <div class="card-header" style="background: var(--naranja-oscuro); color: white;">
+                    <h5 class="mb-0"><i class="fas fa-file-upload"></i> Subir Archivo PDF</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="pdfForm">
+                        {% csrf_token %}
+                        
+                        <div class="file-upload-area" id="uploadArea">
+                            <input type="file" class="d-none" id="archivo_pdf" name="archivo_pdf" accept=".pdf" required>
+                            
+                            <div class="upload-icon">📄</div>
+                            <h4>Arrastra tu archivo PDF aquí</h4>
+                            <p class="text-muted">o haz clic para seleccionar</p>
+                            <button type="button" class="btn btn-nuam" onclick="document.getElementById('archivo_pdf').click()">
+                                Seleccionar Archivo
+                            </button>
+                        </div>
+                        
+                        <div id="fileName" class="mt-3 text-center" style="display: none;">
+                            <strong>Archivo seleccionado:</strong> 
+                            <span id="fileDisplay" class="text-success"></span>
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <button type="submit" class="btn btn-nuam btn-lg" id="submitBtn" disabled>
+                                <i class="fas fa-search"></i> Extraer Datos del PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información sobre formatos -->
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card card-dashboard">
+                <div class="card-header">
+                    <h5 class="mb-0">Formatos de PDF Soportados</h5>
+                </div>
+                <div class="card-body">
+                    <p>El sistema puede extraer datos de PDFs con estos formatos:</p>
+                    
+                    <div class="format-example">
+                        <h6>📊 Formato Calificaciones:</h6>
+                        <code>Fecha: 2023-12-15 Mercado: Acciones Año: 2023 Factor: 1.5000</code>
+                    </div>
+                    
+                    <div class="format-example">
+                        <h6>📋 Formato Tablas:</h6>
+                        <code>| 2023-12-15 | Acciones | 2023 | 1500000 | Descripción de la operación |</code>
+                    </div>
+                    
+                    <div class="format-example">
+                        <h6>💰 Formato Factores:</h6>
+                        <code>Factor Liquidez: 85<br>Factor Riesgo: 120</code>
+                    </div>
+                    
+                    <div class="format-example">
+                        <h6>📝 Texto Estructurado:</h6>
+                        <code>Operación del 15/12/2023 en mercado de Acciones para el año 2023 con monto de 1,500,000</code>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <strong>💡 Tip:</strong> El sistema buscará automáticamente estos patrones en tu PDF 
+                        y te mostrará los datos encontrados para que selecciones cuáles guardar.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Manejar la selección de archivos
+    document.getElementById('archivo_pdf').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            document.getElementById('fileDisplay').textContent = file.name;
+            document.getElementById('fileName').style.display = 'block';
+            document.getElementById('submitBtn').disabled = false;
+        }
+    });
+
+    // Manejar drag and drop
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('archivo_pdf');
+
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            document.getElementById('fileDisplay').textContent = files[0].name;
+            document.getElementById('fileName').style.display = 'block';
+            document.getElementById('submitBtn').disabled = false;
+        }
+    });
+
+    // Click en el área de upload
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    // Mostrar loading al enviar
+    document.getElementById('pdfForm').addEventListener('submit', function() {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando PDF...';
+        submitBtn.disabled = true;
+    });
+</script>
+
+</body>
+</html>

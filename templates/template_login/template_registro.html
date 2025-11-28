@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - NUAM Sistema</title>
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --blanco: #FFFFFF;
+            --gris-claro: #F8F9FA;
+            --texto-oscuro: #2C3E50;
+            --texto-gris: #6C757D;
+        }
+        
+        body {
+            background-color: var(--blanco);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .registro-container {
+            background: var(--blanco);
+            border: 2px solid var(--naranja-oscuro);
+            border-radius: 15px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 5px 20px rgba(211, 84, 0, 0.1);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo-icon {
+            font-size: 3rem;
+            color: var(--naranja-oscuro);
+        }
+        
+        .logo h1 {
+            color: var(--naranja-oscuro);
+            margin: 15px 0 5px 0;
+            font-size: 1.8rem;
+        }
+        
+        .logo p {
+            color: var(--texto-gris);
+            margin: 0;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            color: var(--texto-oscuro);
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        
+        .form-control:focus {
+            border-color: var(--naranja-oscuro);
+            outline: none;
+        }
+        
+        .btn-registro {
+            background-color: var(--naranja-oscuro);
+            color: var(--blanco);
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .btn-registro:hover {
+            background-color: var(--naranja);
+        }
+        
+        .btn-volver {
+            background-color: transparent;
+            color: var(--naranja-oscuro);
+            border: 2px solid var(--naranja-oscuro);
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .btn-volver:hover {
+            background-color: var(--naranja-oscuro);
+            color: var(--blanco);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: var(--texto-gris);
+            font-size: 0.9rem;
+        }
+        
+        .alert {
+            background-color: rgba(211, 84, 0, 0.1);
+            color: var(--naranja-oscuro);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-left: 4px solid var(--naranja-oscuro);
+        }
+        
+        .info-box {
+            background-color: var(--gris-claro);
+            border-left: 4px solid var(--naranja);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .separator {
+            text-align: center;
+            margin: 20px 0;
+            color: var(--texto-gris);
+            position: relative;
+        }
+        
+        .separator:before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background-color: #e9ecef;
+        }
+        
+        .separator span {
+            background: var(--blanco);
+            padding: 0 15px;
+            position: relative;
+        }
+        
+        .requisitos {
+            font-size: 0.8rem;
+            color: var(--texto-gris);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="registro-container">
+        <!-- LOGO -->
+        <div class="logo">
+            <div class="logo-icon">🏆</div>
+            <h1>REGISTRO NUAM</h1>
+            <p>Crear nueva cuenta</p>
+        </div>
+        
+        <!-- FORMULARIO REGISTRO -->
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="form-group">
+                <label for="username" class="form-label">Nombre de usuario</label>
+                <input type="text" class="form-control" id="username" name="username" 
+                       placeholder="Elija un nombre de usuario" required>
+            </div>
+            
+            <div class="form-group">
+               <label for="nombre" class="form-label">Nombre completo</label>
+              <input type="text" class="form-control" id="nombre" name="nombre" 
+                     placeholder="Ingresa tu nombre completo" required>
+            </div>
+
+            <div class="form-group">
+                <label for="correo" class="form-label">Correo electrónico</label>
+                <input type="email" class="form-control" id="correo" name="correo" 
+                  placeholder="ejemplo@correo.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="contrasena" class="form-label">Contraseña</label>
+                <input type="password" class="form-control" id="contrasena" name="contrasena" 
+                  placeholder="Ingrese una contraseña segura" required>
+            </div>
+            
+            <div class="info-box">
+                <strong>Importante:</strong><br>
+                Su cuenta será enviada al administrador para su aprobación.
+            </div>
+            
+            <button type="submit" class="btn-registro">
+                Enviar Registro
+            </button>
+        </form>
+        
+        <div class="separator">
+            <span>o</span>
+        </div>
+        
+        <a href="{% url 'login' %}" class="btn-volver" style="text-decoration: none; display: block;">
+            Volver al Login
+        </a>
+    </div>
+</body>
+</html>
