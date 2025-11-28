@@ -91,27 +91,22 @@ WSGI_APPLICATION = 'PrNuam3.wsgi.application'
 
 # Configuración de base de datos para desarrollo y producción
 if DEBUG:
-    # Base de datos local para desarrollo
+# ✅ TEMPORAL - Configuración SIMPLIFICADA para crear superusuario
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'nuam1',
-            'USER': 'root',
-            'PASSWORD': 'admin',
-            'HOST': 'localhost', 
-            'PORT': '3306',  
-        }
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    # Base de datos PostgreSQL para producción (Render)
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.getenv('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
+}
 
+# Asegúrate que DEBUG esté en True para desarrollo
+DEBUG = True# ✅ TEMPORAL - Usar SOLO SQLite:
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
