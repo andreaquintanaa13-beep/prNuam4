@@ -320,12 +320,7 @@ def dashboard_admin(request):
     return render(request, 'template_dashboard/template_dashboard_admin.html', context)
 
 
-# DASHBOARD CORREDOR
-
-
-from django.utils import timezone
-
-from django.utils import timezone
+# DASHBOARD CORREDOR CORREGIDO
 
 @login_required_custom
 def dashboard_corredor(request):
@@ -353,7 +348,11 @@ def dashboard_corredor(request):
 
     # FILTROS
     if buscar:
-        calificaciones = calificaciones.filter(descripcion__icontains=buscar)
+        calificaciones = calificaciones.filter(
+            Q(descripcion__icontains=buscar) | 
+            Q(instrumento__icontains=buscar) |
+            Q(fk_id_corredor__nombre__icontains=buscar)
+        )
     if mercado_filter:
         calificaciones = calificaciones.filter(mercado=mercado_filter)
     if ano_filter:
@@ -362,25 +361,31 @@ def dashboard_corredor(request):
     calificaciones = calificaciones.order_by('-fecha')
 
     # ----------------------------
-    # KPI: Cálculos reales
+    # KPI: Cálculos reales CORREGIDOS
     # ----------------------------
-
     hoy = timezone.now().date()
+    
+    # Total de calificaciones (con filtros aplicados)
     total_calificaciones = calificaciones.count()
 
+    # Calificaciones de hoy (sin filtros de búsqueda)
     calificaciones_hoy = Calificacion.objects.filter(
         fk_id_corredor=corredor,
         fecha=hoy
     ).count()
 
+    # Calificaciones del mes (sin filtros de búsqueda)
+    primer_dia_mes = hoy.replace(day=1)
     calificaciones_mes = Calificacion.objects.filter(
         fk_id_corredor=corredor,
-        fecha__year=hoy.year,
-        fecha__month=hoy.month
+        fecha__gte=primer_dia_mes,
+        fecha__lte=hoy
     ).count()
 
-    # No existe tabla de cargas → ponemos 0
-    cargas_realizadas = 0
+    # Cargas realizadas (usando Archivocarga)
+    cargas_realizadas = Archivocarga.objects.filter(
+        fk_id_usuario=usuario
+    ).count()
 
     return render(request, 'template_dashboard/template_dashboard_corredor.html', {
         'calificaciones': calificaciones,
@@ -592,7 +597,14 @@ def carga_montos(request):
             registros_procesados, registros_fallidos = 0, 0
             for row_num, row in enumerate(reader, start=2):
                 try:
-                    monto = float(row['monto'].replace('.', '').replace(',', '.'))
+                    # Manejar diferentes formatos de número
+                    monto_str = row['monto']
+                    # Remover puntos de miles y reemplazar coma decimal por punto
+                    monto_str = monto_str.replace('.', '').replace(',', '.')
+                    # Remover símbolos de moneda
+                    monto_str = monto_str.replace('$', '').replace('€', '').strip()
+                    monto = float(monto_str)
+                    
                     Calificacion.objects.create(
                         fecha=datetime.strptime(row['fecha'], '%Y-%m-%d').date(),
                         mercado=row['mercado'],
@@ -605,11 +617,12 @@ def carga_montos(request):
                 except Exception as e:
                     registros_fallidos += 1
                     print(f"Fila {row_num} error: {e}")
+                    print(f"Datos de la fila: {row}")
 
             carga.estado = 'completado'
             carga.save()
             messages.success(request, f'{registros_procesados} montos procesados, {registros_fallidos} fallidos')
-            return redirect('dashboard_admin')
+            return redirect('dashboard_admin' if request.session.get('rol') == 'admin' else 'dashboard_corredor')
         
         except Exception as e:
             messages.error(request, f'Error procesando CSV: {str(e)}')
@@ -699,7 +712,20 @@ def carga_masiva_montos(request):
             for row_num, row in enumerate(reader, start=2):
                 try:
                     # Normalizar monto (quita comas o puntos)
-                    monto_str = row['monto'].replace('.', '').replace(',', '')
+                    monto_str = row['monto']
+                    # Limpiar el string
+                    monto_str = monto_str.replace('$', '').replace('€', '').strip()
+                    # Reemplazar comas decimales por punto
+                    monto_str = monto_str.replace(',', '.')
+                    # Eliminar puntos de miles
+                    if '.' in monto_str and monto_str.count('.') > 1:
+                        # Si hay múltiples puntos, son separadores de miles
+                        parts = monto_str.split('.')
+                        if len(parts[-1]) == 2:  # Posiblemente decimales
+                            monto_str = ''.join(parts[:-1]) + '.' + parts[-1]
+                        else:
+                            monto_str = ''.join(parts)
+                    
                     monto_float = float(monto_str)
 
                     Calificacion.objects.create(
@@ -739,7 +765,7 @@ def carga_masiva_montos(request):
 
 # En views.py
 @login_required_custom
-def carga_calificaciones(request):
+def carga_masiva_calificaciones(request):
     if request.method == 'POST':
         archivo_csv = request.FILES.get('archivo_csv')
         if not archivo_csv:
@@ -766,12 +792,17 @@ def carga_calificaciones(request):
 
             registros = 0
             for row in reader:
+                # Manejar factor_actualizado
+                factor_str = row.get('factor_actualizado', '0')
+                factor_str = factor_str.replace('.', '').replace(',', '.').replace('$', '').strip()
+                factor_val = float(factor_str) if factor_str else 0.0
+                
                 Calificacion.objects.create(
                     fecha=datetime.strptime(row['fecha'], '%Y-%m-%d').date(),
                     mercado=row['mercado'],
                     ano=int(row['ano']),
                     descripcion=row['descripcion'],
-                    factor_actualizado=float(row.get('factor_actualizado',0)),
+                    factor_actualizado=factor_val,
                     fk_id_corredor=corredor
                 )
                 registros += 1
@@ -899,29 +930,81 @@ def carga_pdf(request):
             with pdfplumber.open(archivo_pdf) as pdf:
                 for page_num, page in enumerate(pdf.pages, start=1):
                     text = page.extract_text()
-                    if not text: continue
-                    matches = re.findall(
-                        r"(\d{4}-\d{2}-\d{2}).*?(Acciones|Bonos|Derivados|Monedas).*?Año[:\s]*(\d{4}).*?(?:Factor|Monto)[:\s]*([\d\.,]+)", 
-                        text, re.IGNORECASE
-                    )
-                    for fecha, mercado, ano, factor in matches:
-                        factor_val = float(factor.replace('.', '').replace(',', '.'))
-                        datos_extraidos.append({
-                            'fecha': fecha, 'mercado': mercado, 'ano': ano,
-                            'factor': factor_val, 'descripcion': f'PDF Página {page_num}'
-                        })
+                    if not text: 
+                        continue
+                    
+                    print(f"=== DEBUG Página {page_num} ===")
+                    print(text[:500])  # Ver primeros 500 caracteres para debug
+                    
+                    # PATRONES MEJORADOS para extracción de datos
+                    patrones = [
+                        # Patrón 1: Fecha - Mercado - Año - Monto/Factor
+                        r'(\d{2,4}[-/]\d{1,2}[-/]\d{2,4})[^\d]*([A-Za-zñÑáéíóúÁÉÍÓÚ\s]+)[^\d]*(\d{4})[^\d]*([\d\.,]+)',
+                        
+                        # Patrón 2: Buscar montos grandes (con separadores de miles)
+                        r'(\d{4}-\d{2}-\d{2})[^0-9]*([\d]{1,3}(?:\.\d{3})*(?:,\d{2})?)',
+                        
+                        # Patrón 3: Buscar por etiquetas específicas
+                        r'Fecha[:\s]*(\d{4}-\d{2}-\d{2}).*?Mercado[:\s]*([A-Za-z]+).*?Año[:\s]*(\d{4}).*?(?:Monto|Factor)[:\s]*([\d\.,]+)',
+                    ]
+                    
+                    for patron in patrones:
+                        matches = re.findall(patron, text, re.IGNORECASE | re.DOTALL)
+                        
+                        for match in matches:
+                            if len(match) >= 4:
+                                try:
+                                    fecha = match[0]
+                                    mercado = match[1].strip()
+                                    ano = match[2]
+                                    monto_str = match[3]
+                                    
+                                    # Limpiar y convertir monto
+                                    monto_str = monto_str.replace('.', '').replace(',', '.')
+                                    monto_val = float(monto_str)
+                                    
+                                    # Validar mercado
+                                    mercados_validos = ['Acciones', 'Bonos', 'Derivados', 'Monedas', 'Acción', 'Bono', 'Derivado', 'Moneda']
+                                    mercado_validado = next((m for m in mercados_validos if m.lower() in mercado.lower()), 'Otro')
+                                    
+                                    datos_extraidos.append({
+                                        'fecha': fecha,
+                                        'mercado': mercado_validado,
+                                        'ano': ano,
+                                        'factor': monto_val,
+                                        'descripcion': f'PDF Página {page_num} - Extracción automática'
+                                    })
+                                except Exception as e:
+                                    print(f"Error procesando match: {match}, error: {e}")
+                                    continue
 
             registros = 0
-            for d in datos_extraidos:
-                Calificacion.objects.create(
-                    fecha=datetime.strptime(d['fecha'], '%Y-%m-%d').date(),
-                    mercado=d['mercado'],
-                    ano=int(d['ano']),
-                    factor_actualizado=d['factor'],
-                    descripcion=d['descripcion'],
-                    fk_id_corredor=corredor
-                )
-                registros += 1
+            for dato in datos_extraidos:
+                try:
+                    # Convertir fecha
+                    fecha_dt = datetime.strptime(dato['fecha'], '%Y-%m-%d').date() if '-' in dato['fecha'] else datetime.strptime(dato['fecha'], '%d/%m/%Y').date()
+                    
+                    Calificacion.objects.create(
+                        fecha=fecha_dt,
+                        mercado=dato['mercado'],
+                        ano=int(dato['ano']),
+                        factor_actualizado=dato['factor'],
+                        descripcion=dato['descripcion'],
+                        fk_id_corredor=corredor
+                    )
+                    registros += 1
+                except Exception as e:
+                    print(f"Error guardando registro: {dato}, error: {e}")
+                    continue
+
+            # Crear registro de carga
+            Archivocarga.objects.create(
+                tipo_archivo='pdf_calificaciones',
+                fecha_carga=datetime.now(),
+                estado='completado',
+                archivo_url=archivo_pdf.name,
+                fk_id_usuario=usuario
+            )
 
             messages.success(request, f'{registros} registros extraídos del PDF')
             return redirect('dashboard_corredor')
@@ -1090,44 +1173,67 @@ def extraer_datos_pdf(request):
             corredor = Corredor.objects.get(fk_usuario=usuario)
             datos_extraidos = []
 
-            # Abrimos el PDF
             with pdfplumber.open(archivo_pdf) as pdf:
                 for page_num, page in enumerate(pdf.pages, start=1):
                     text = page.extract_text()
                     if not text:
                         continue  # saltar página vacía
                     
-                    # Patrón general: fecha, mercado, año, factor/monto
-                    matches = re.findall(
-                        r"(\d{4}-\d{2}-\d{2}).*?(Acciones|Bonos|Derivados|Monedas).*?Año[:\s]*(\d{4}).*?(?:Factor|Monto)[:\s]*([\d\.,]+)", 
-                        text, re.IGNORECASE
-                    )
+                    # PATRONES MEJORADOS - más flexibles
+                    patrones = [
+                        # Patrón 1: Buscar formato con etiquetas
+                        r'(?:Fecha|Date)[:\s]*(\d{2,4}[-/]\d{1,2}[-/]\d{2,4}).*?(?:Mercado|Market)[:\s]*([A-Za-zñÑáéíóúÁÉÍÓÚ\s]+).*?(?:Año|Year)[:\s]*(\d{4}).*?(?:Monto|Factor|Amount|Value)[:\s]*([\d\.,]+)',
+                        
+                        # Patrón 2: Buscar por estructura de tabla
+                        r'(\d{4}-\d{2}-\d{2})\s+([A-Za-z]+)\s+(\d{4})\s+([\d\.,]+)',
+                        
+                        # Patrón 3: Buscar cualquier número grande cerca de una fecha
+                        r'(\d{4}-\d{2}-\d{2})[^0-9]{0,50}([\d]{1,3}(?:\.\d{3})*(?:,\d{2})?)',
+                    ]
+                    
+                    for patron in patrones:
+                        matches = re.findall(patron, text, re.IGNORECASE | re.DOTALL)
+                        
+                        for match in matches:
+                            if len(match) >= 4:
+                                try:
+                                    fecha = match[0]
+                                    mercado = match[1].strip()
+                                    ano = match[2]
+                                    monto_str = match[3]
+                                    
+                                    # Limpiar y convertir monto
+                                    monto_str = monto_str.replace('.', '').replace(',', '.')
+                                    monto_val = float(monto_str)
+                                    
+                                    # Validar y normalizar mercado
+                                    mercado = mercado.capitalize()
+                                    if 'accion' in mercado.lower():
+                                        mercado = 'Acciones'
+                                    elif 'bono' in mercado.lower():
+                                        mercado = 'Bonos'
+                                    elif 'derivad' in mercado.lower():
+                                        mercado = 'Derivados'
+                                    elif 'moneda' in mercado.lower():
+                                        mercado = 'Monedas'
+                                    
+                                    datos_extraidos.append({
+                                        'fecha': fecha,
+                                        'mercado': mercado,
+                                        'ano': ano,
+                                        'factor': monto_val,
+                                        'descripcion': f'PDF Página {page_num}'
+                                    })
+                                except Exception as e:
+                                    print(f"Error procesando match: {match}, error: {e}")
+                                    continue
 
-                    for fecha, mercado, ano, factor in matches:
-                        factor_val = float(factor.replace('.', '').replace(',', '.'))
-                        datos_extraidos.append({
-                            'fecha': fecha,
-                            'mercado': mercado,
-                            'ano': ano,
-                            'factor': factor_val,
-                            'descripcion': f'PDF Página {page_num}'
-                        })
-
-            # Guardar directamente en Calificacion
-            registros_guardados = 0
-            for dato in datos_extraidos:
-                Calificacion.objects.create(
-                    fecha=datetime.strptime(dato['fecha'], '%Y-%m-%d').date(),
-                    mercado=dato['mercado'],
-                    ano=int(dato['ano']),
-                    factor_actualizado=dato['factor'],
-                    descripcion=dato['descripcion'],
-                    fk_id_corredor=corredor
-                )
-                registros_guardados += 1
-
-            messages.success(request, f"{registros_guardados} registros guardados desde PDF")
-            return redirect('dashboard_corredor')
+            # Pasar datos a template para revisión antes de guardar
+            return render(request, 'template_cargas/extraer_datos_pdf.html', {
+                'datos_extraidos': datos_extraidos,
+                'archivo_nombre': archivo_pdf.name,
+                'total_registros': len(datos_extraidos)
+            })
 
         except Exception as e:
             messages.error(request, f"Error procesando PDF: {str(e)}")
@@ -1180,11 +1286,21 @@ def guardar_datos_extraidos(request):
                 descripcion = request.POST.get(f'descripcion_{dato_idx}')
 
                 if all([fecha, mercado, ano, factor]):
+                    # Convertir fecha
+                    try:
+                        fecha_dt = datetime.strptime(fecha, '%Y-%m-%d').date()
+                    except:
+                        # Intentar otro formato
+                        fecha_dt = datetime.strptime(fecha, '%d/%m/%Y').date()
+                    
+                    # Limpiar factor
+                    factor_val = float(factor.replace('.', '').replace(',', '.'))
+                    
                     Calificacion.objects.create(
-                        fecha=datetime.strptime(fecha, '%Y-%m-%d').date(),
+                        fecha=fecha_dt,
                         mercado=mercado,
                         ano=int(ano),
-                        factor_actualizado=float(factor),
+                        factor_actualizado=factor_val,
                         descripcion=descripcion,
                         fk_id_corredor=corredor
                     )
