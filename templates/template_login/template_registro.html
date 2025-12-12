@@ -170,20 +170,30 @@
             color: var(--texto-gris);
             margin-top: 5px;
         }
+        
+        .requisitos-lista {
+            font-size: 0.8rem;
+            color: var(--texto-gris);
+            margin-top: 5px;
+            padding-left: 15px;
+        }
+        
+        .requisitos-lista li {
+            margin-bottom: 3px;
+        }
     </style>
 </head>
 <body>
     <div class="registro-container">
         <!-- LOGO -->
         <div class="logo">
-            <div class="logo-icon">🏆</div>
             <h1>REGISTRO NUAM</h1>
             <p>Crear nueva cuenta</p>
         </div>
         
         <!-- FORMULARIO REGISTRO -->
-        <form method="post">
-            {% csrf_token %}
+        <form method="post" action="{% url 'registro' %}">
+            {% csrf_token %}  <!-- ✅ TOKEN CSRF CORRECTO -->
             
             {% if messages %}
                 {% for message in messages %}
@@ -192,32 +202,47 @@
             {% endif %}
             
             <div class="form-group">
-                <label for="username" class="form-label">Nombre de usuario</label>
-                <input type="text" class="form-control" id="username" name="username" 
-                       placeholder="Elija un nombre de usuario" required>
+                <label for="nombre" class="form-label">Nombre completo *</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" 
+                       placeholder="Ingresa tu nombre completo" required 
+                       minlength="2" maxlength="50">
+                <div class="requisitos">Mínimo 2 caracteres, solo letras y espacios</div>
+            </div>
+
+            <div class="form-group">
+                <label for="correo" class="form-label">Correo electrónico *</label>
+                <input type="email" class="form-control" id="correo" name="correo" 
+                       placeholder="ejemplo@correo.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="contrasena" class="form-label">Contraseña *</label>
+                <input type="password" class="form-control" id="contrasena" name="contrasena" 
+                       placeholder="Ingrese una contraseña segura" required minlength="8">
+                
+                <div class="requisitos-lista">
+                    <strong>La contraseña debe contener:</strong>
+                    <ul>
+                        <li>Mínimo 8 caracteres</li>
+                        <li>Al menos una letra mayúscula</li>
+                        <li>Al menos una letra minúscula</li>
+                        <li>Al menos un número</li>
+                        <li>Al menos un carácter especial (!@#$%^&*)</li>
+                    </ul>
+                </div>
             </div>
             
             <div class="form-group">
-               <label for="nombre" class="form-label">Nombre completo</label>
-              <input type="text" class="form-control" id="nombre" name="nombre" 
-                     placeholder="Ingresa tu nombre completo" required>
-            </div>
-
-            <div class="form-group">
-                <label for="correo" class="form-label">Correo electrónico</label>
-                <input type="email" class="form-control" id="correo" name="correo" 
-                  placeholder="ejemplo@correo.com" required>
-            </div>
-
-            <div class="form-group">
-                <label for="contrasena" class="form-label">Contraseña</label>
-                <input type="password" class="form-control" id="contrasena" name="contrasena" 
-                  placeholder="Ingrese una contraseña segura" required>
+                <label for="contrasena_confirmacion" class="form-label">Confirmar contraseña *</label>
+                <input type="password" class="form-control" id="contrasena_confirmacion" 
+                       name="contrasena_confirmacion" placeholder="Repita la contraseña" required>
             </div>
             
             <div class="info-box">
-                <strong>Importante:</strong><br>
-                Su cuenta será enviada al administrador para su aprobación.
+                <strong>⚠️ Importante:</strong><br>
+                1. Su cuenta será enviada al administrador para su aprobación.<br>
+                2. Recibirá un correo cuando sea activada.<br>
+                3. Use un correo válido que pueda verificar.
             </div>
             
             <button type="submit" class="btn-registro">
@@ -232,6 +257,38 @@
         <a href="{% url 'login' %}" class="btn-volver" style="text-decoration: none; display: block;">
             Volver al Login
         </a>
+        
+        <div class="footer">
+            <p>Sistema NUAM &copy; 2024 - Gestión de Calificaciones</p>
+        </div>
     </div>
+    
+    <script>
+        // Validación de contraseña en tiempo real
+        document.getElementById('contrasena').addEventListener('input', function(e) {
+            const password = e.target.value;
+            const requirements = {
+                length: password.length >= 8,
+                upper: /[A-Z]/.test(password),
+                lower: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+            };
+            
+            // Puedes agregar aquí feedback visual si quieres
+            console.log('Validación contraseña:', requirements);
+        });
+        
+        // Validación que las contraseñas coincidan
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const password = document.getElementById('contrasena').value;
+            const confirm = document.getElementById('contrasena_confirmacion').value;
+            
+            if (password !== confirm) {
+                e.preventDefault();
+                alert('Las contraseñas no coinciden');
+            }
+        });
+    </script>
 </body>
 </html>

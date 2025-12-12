@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Carga - NUAM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --naranja-oscuro: #D35400;
+            --naranja: #E67E22;
+            --naranja-claro: #F39C12;
+            --gris-claro: #F8F9FA;
+            --blanco: #FFFFFF;
+            --texto-oscuro: #2C3E50;
+        }
+
+        body {
+            background-color: var(--gris-claro);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-nuam {
+            background: var(--naranja-oscuro) !important;
+        }
+
+        .card-nuam {
+            background: var(--blanco);
+            border-radius: 12px;
+            border-left: 4px solid var(--naranja-oscuro);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .badge-completado { background: #28a745; }
+        .badge-procesando { background: #ffc107; color: #000; }
+        .badge-error { background: #dc3545; }
+
+        .btn-nuam {
+            background-color: var(--naranja-oscuro);
+            color: white;
+            font-weight: 600;
+            border: none;
+        }
+
+        .btn-nuam:hover { background-color: var(--naranja); }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-nuam">
+        <div class="container-fluid">
+            <span class="navbar-brand text-white">
+                <i class="fas fa-file-alt"></i> Detalle de Carga Masiva
+            </span>
+
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text text-white me-3">
+                    <i class="fas fa-user"></i> {{ request.session.nombre }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+
+        <!-- TITULO -->
+        <div class="card card-nuam mb-4">
+            <div class="card-body">
+                <h3 class="mb-0">
+                    <i class="fas fa-folder-open"></i> Carga #{{ carga.id_archivo }}
+                </h3>
+                <p class="text-muted mb-0">Detalle completo de la carga seleccionada</p>
+            </div>
+        </div>
+
+        <!-- INFO GENERAL DE LA CARGA -->
+        <div class="card card-nuam mb-4">
+            <div class="card-header" style="background: var(--naranja-oscuro); color:white;">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información General</h5>
+            </div>
+            <div class="card-body">
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Tipo de archivo:</strong>
+                        <p class="mb-1">
+                            {% if carga.tipo_archivo == 'montos' %}
+                                <span class="badge bg-info"><i class="fas fa-money-bill"></i> Montos</span>
+                            {% elif carga.tipo_archivo == 'factores' %}
+                                <span class="badge bg-warning text-dark"><i class="fas fa-calculator"></i> Factores</span>
+                            {% else %}
+                                <span class="badge bg-purple"><i class="fas fa-star"></i> Calificaciones</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>Estado:</strong>
+                        <p class="mb-1">
+                            {% if carga.estado == 'completado' %}
+                                <span class="badge badge-completado"><i class="fas fa-check"></i> Completado</span>
+                            {% elif carga.estado == 'procesando' %}
+                                <span class="badge badge-procesando"><i class="fas fa-sync-alt"></i> Procesando</span>
+                            {% else %}
+                                <span class="badge badge-error"><i class="fas fa-exclamation"></i> Error</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>Fecha de Carga:</strong>
+                        <p>{{ carga.fecha_carga|date:"d/m/Y H:i" }}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>Usuario que cargó:</strong>
+                        <p>{{ carga.fk_id_usuario.nombre }}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>Nombre del Archivo:</strong>
+                        <p>{{ carga.archivo_url|default:"No disponible" }}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>Resultado:</strong>
+                        <p>{{ carga.resultado|default:"No registrado" }}</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- DETALLE DE REGISTROS (SI LOS HAY) -->
+        {% if registros %}
+        <div class="card card-nuam mb-4">
+            <div class="card-header" style="background: var(--naranja-oscuro); color:white;">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Registros Procesados</h5>
+            </div>
+            <div class="card-body">
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                {% if carga.tipo_archivo == 'montos' %}
+                                    <th>Fecha</th>
+                                    <th>Mercado</th>
+                                    <th>Año</th>
+                                    <th>Monto</th>
+                                    <th>Descripción</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reg in registros %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+
+                                {% if carga.tipo_archivo == 'montos' %}
+                                    <td>{{ reg.fecha|date:"d/m/Y" }}</td>
+                                    <td>{{ reg.mercado }}</td>
+                                    <td>{{ reg.ano }}</td>
+                                    <td>${{ reg.factor_actualizado }}</td>
+                                    <td>{{ reg.descripcion }}</td>
+                                {% endif %}
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- BOTONES -->
+        <div class="text-center mt-4">
+            <a href="{% url 'listado_cargas' %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Volver al Listado
+            </a>
+
+            {% if carga.estado == 'completado' %}
+            <a href="{% url 'descargar_carga' carga.id_archivo %}" class="btn btn-nuam">
+                <i class="fas fa-download"></i> Descargar Reporte
+            </a>
+            {% endif %}
+        </div>
+
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

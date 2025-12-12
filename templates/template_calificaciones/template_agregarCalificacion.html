@@ -143,7 +143,7 @@
                     <h5 class="mb-0">Datos de la Calificación Tributaria</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" id="calificacionForm">
                         {% csrf_token %}
 
                         <!-- Primera Fila -->
@@ -152,9 +152,10 @@
                                 <label class="form-label required-field">Mercado</label>
                                 <select name="mercado" class="form-control" required>
                                     <option value="">Seleccionar mercado</option>
-                                    <option value="ACC">Acciones</option>
-                                    <option value="CFI">CFI</option>
-                                    <option value="FM">Fondos Mutuos</option>
+                                    <!-- CAMBIO: Valores en minúsculas para coincidir con tu modelo -->
+                                    <option value="acciones">Acciones</option>
+                                    <option value="cfi">CFI</option>
+                                    <option value="fondos_mutuos">Fondos Mutuos</option>
                                 </select>
                             </div>
 
@@ -165,7 +166,8 @@
 
                             <div class="col-md-4">
                                 <label class="form-label required-field">Secuencia Evento</label>
-                                <input type="number" name="secuencia_evento" class="form-control" min="10000" required>
+                                <input type="number" name="secuencia_evento" class="form-control" min="10001" required>
+                                <small class="text-muted">Debe ser mayor a 10,000</small>
                             </div>
                         </div>
 
@@ -235,6 +237,60 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('calificacionForm');
+    const secuenciaInput = document.querySelector('[name="secuencia_evento"]');
+    
+    // Validar secuencia en tiempo real
+    if (secuenciaInput) {
+        secuenciaInput.addEventListener('blur', function() {
+            const valor = parseInt(this.value);
+            if (valor <= 10000) {
+                this.style.borderColor = '#dc3545';
+                alert('❌ Error: La secuencia debe ser mayor a 10.000');
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+    
+    // Validar antes de enviar
+    form.addEventListener('submit', function(e) {
+        let hasErrors = false;
+        
+        // Validar secuencia
+        if (secuenciaInput) {
+            const secuencia = parseInt(secuenciaInput.value);
+            if (secuencia <= 10000) {
+                hasErrors = true;
+                secuenciaInput.focus();
+                alert('❌ Error: La secuencia del evento debe ser mayor a 10.000');
+            }
+        }
+        
+        // Validar que se haya seleccionado mercado
+        const mercadoSelect = document.querySelector('[name="mercado"]');
+        if (mercadoSelect && !mercadoSelect.value) {
+            hasErrors = true;
+            mercadoSelect.focus();
+            alert('❌ Error: Debe seleccionar un mercado');
+        }
+        
+        if (hasErrors) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Confirmación final
+        if (!confirm('¿Está seguro de guardar esta calificación tributaria?')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
 
 </body>
 </html>

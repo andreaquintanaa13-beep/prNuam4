@@ -1,0 +1,1 @@
+web: gunicorn PrNuam3.wsgi:application

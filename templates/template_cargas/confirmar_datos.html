@@ -112,230 +112,182 @@
 </head>
 <body>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-nuam">
-        <div class="container-fluid">
-            <span class="navbar-brand text-white">NUAM - Confirmar Datos</span>
-            <div class="navbar-nav ms-auto">
-                <span class="navbar-text text-white me-3">
-                    {{ request.session.usuario_nombre }}
-                </span>
-                <a href="{% url 'extraer_datos_pdf' %}" class="btn btn-sm btn-outline-light me-2">
-                    ← Subir otro PDF
-                </a>
-                <a href="{% url 'dashboard_corredor' %}" class="btn btn-sm btn-outline-light me-2">
-                    📊 Dashboard
-                </a>
-                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">Cerrar Sesión</a>
-            </div>
+<nav class="navbar navbar-expand-lg navbar-nuam">
+    <div class="container-fluid">
+        <span class="navbar-brand text-white">NUAM - Confirmar Datos</span>
+        <div class="navbar-nav ms-auto">
+            <span class="navbar-text text-white me-3">
+                {{ request.session.usuario_nombre }}
+            </span>
+            <a href="{% url 'extraer_datos_pdf' %}" class="btn btn-sm btn-outline-light me-2">
+                ← Subir otro PDF
+            </a>
+            <a href="{% url 'dashboard_corredor' %}" class="btn btn-sm btn-outline-light me-2">
+                📊 Dashboard
+            </a>
+            <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">Cerrar Sesión</a>
         </div>
-    </nav>
+    </div>
+</nav>
 
 <div class="container-fluid py-4">
-    
-    <!-- Header -->
+
     <div class="row mb-4">
         <div class="col">
             <div class="welcome-section">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h1 class="display-6">Datos Extraídos del PDF</h1>
-                        <p class="mb-0">Selecciona los datos que quieres guardar en el sistema</p>
-                    </div>
-                </div>
+                <h1 class="display-6">Datos Extraídos del PDF</h1>
+                <p class="mb-0">Selecciona los datos que quieres guardar en el sistema</p>
             </div>
         </div>
     </div>
 
-    <!-- Resumen -->
     <div class="row mb-4">
         <div class="col-md-8 mx-auto">
             <div class="summary-card">
                 <div class="row">
                     <div class="col-md-4 text-center">
-                        <h3 class="text-nuam" style="color: var(--naranja-oscuro);">{{ datos_extraidos|length }}</h3>
-                        <p class="mb-0">Registros Encontrados</p>
+                        <h3 style="color: var(--naranja-oscuro);">{{ datos_extraidos|length }}</h3>
+                        <p>Registros Encontrados</p>
                     </div>
                     <div class="col-md-4 text-center">
-                        <h3 class="text-nuam" style="color: var(--naranja-oscuro);">{{ nombre_archivo }}</h3>
-                        <p class="mb-0">Archivo PDF</p>
+                        <h3 style="color: var(--naranja-oscuro);">{{ nombre_archivo }}</h3>
+                        <p>Archivo PDF</p>
                     </div>
                     <div class="col-md-4 text-center">
-                        <h3 class="text-nuam" style="color: var(--naranja-oscuro);">{{ corredor.nombre }}</h3>
-                        <p class="mb-0">Corredor</p>
+                        <h3 style="color: var(--naranja-oscuro);">{{ corredor.nombre }}</h3>
+                        <p>Corredor</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Formulario para seleccionar datos -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card card-dashboard">
-                <div class="card-header d-flex justify-content-between align-items-center" style="background: var(--naranja-oscuro); color: white;">
-                    <h5 class="mb-0">Seleccionar Datos para Guardar</h5>
-                    <div>
-                        <small>{{ datos_extraidos|length }} registros detectados</small>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    {% if datos_extraidos %}
-                    <form method="POST" action="{% url 'guardar_datos_pdf' %}">
-                        {% csrf_token %}
-                        
-                        <div class="data-preview">
-                            <table class="table table-hover table-custom mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="checkbox-cell">
-                                            <input type="checkbox" id="selectAll" checked>
-                                        </th>
-                                        <th>Tipo</th>
-                                        <th>Fecha</th>
-                                        <th>Mercado</th>
-                                        <th>Año</th>
-                                        <th>Factor/Monto</th>
-                                        <th>Descripción</th>
-                                        <th>Página</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for dato in datos_extraidos %}
-                                    <tr>
-                                        <td class="checkbox-cell">
-                                            <input type="checkbox" name="datos_seleccionados" value="{{ forloop.counter0 }}" checked>
-                                        </td>
-                                        <td>
-                                            <span class="badge 
-                                                {% if dato.tipo == 'calificacion' %}bg-primary
-                                                {% elif dato.tipo == 'monto' %}bg-success
-                                                {% else %}bg-info{% endif %}">
-                                                {{ dato.tipo|title }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {% if dato.fecha %}
-                                                <small>{{ dato.fecha }}</small>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if dato.mercado %}
-                                                <span class="badge-market">{{ dato.mercado }}</span>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if dato.ano %}
-                                                <span class="badge bg-secondary">{{ dato.ano }}</span>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if dato.factor_actualizado %}
-                                                <span class="badge bg-warning text-dark">{{ dato.factor_actualizado }}</span>
-                                            {% elif dato.valor_factor %}
-                                                <span class="badge bg-info text-dark">{{ dato.valor_factor }}</span>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <small>{{ dato.descripcion|default:"Extraído de PDF" }}</small>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-light text-dark">Pág {{ dato.pagina }}</span>
-                                        </td>
-                                    </tr>
-                                    
-                                    <!-- Campos ocultos para cada dato -->
-                                    <input type="hidden" name="fecha_{{ forloop.counter0 }}" value="{{ dato.fecha|default:'' }}">
-                                    <input type="hidden" name="mercado_{{ forloop.counter0 }}" value="{{ dato.mercado|default:'' }}">
-                                    <input type="hidden" name="ano_{{ forloop.counter0 }}" value="{{ dato.ano|default:'' }}">
-                                    <input type="hidden" name="factor_{{ forloop.counter0 }}" value="{{ dato.factor_actualizado|default:dato.valor_factor|default:'' }}">
-                                    <input type="hidden" name="descripcion_{{ forloop.counter0 }}" value="{{ dato.descripcion|default:'Extraído de PDF' }}">
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="card-footer">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong id="selectedCount">{{ datos_extraidos|length }}</strong> registros seleccionados
-                                </div>
-                                <div>
-                                    <button type="button" class="btn btn-outline-secondary me-2" onclick="deselectAll()">
-                                        Deseleccionar Todos
-                                    </button>
-                                    <button type="submit" class="btn btn-nuam">
-                                        <i class="fas fa-save"></i> Guardar Datos Seleccionados
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <h5 class="text-muted">No se encontraron datos en el PDF</h5>
-                        <p class="text-muted">
-                            El PDF no contenía datos en los formatos reconocidos por el sistema.
-                        </p>
-                        <div class="mt-3">
-                            <a href="{% url 'extraer_datos_pdf' %}" class="btn btn-nuam me-2">
-                                📄 Procesar otro PDF
-                            </a>
-                            <a href="{% url 'dashboard_corredor' %}" class="btn btn-outline-nuam">
-                                📊 Volver al Dashboard
-                            </a>
-                        </div>
-                    </div>
-                    {% endif %}
+    {% if datos_extraidos %}
+    <div class="card card-dashboard">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background: var(--naranja-oscuro); color: white;">
+            <h5 class="mb-0">Seleccionar Datos para Guardar</h5>
+            <small>{{ datos_extraidos|length }} registros detectados</small>
+        </div>
+
+        <form method="POST" action="{% url 'guardar_datos_pdf' %}">
+            {% csrf_token %}
+
+            <div class="data-preview">
+                <table class="table table-hover table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell">
+                                <input type="checkbox" id="selectAll" checked>
+                            </th>
+                            <th>Fecha</th>
+                            <th>Mercado</th>
+                            <th>Año</th>
+                            <th>Factor/Monto</th>
+                            <th>Descripción</th>
+                            <th>Página</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for dato in datos_extraidos %}
+                        <tr>
+                            <td class="checkbox-cell">
+                                <input type="checkbox" name="datos_seleccionados" value="{{ forloop.counter0 }}" checked>
+                            </td>
+
+                            <td>
+                                {% if dato.fechas %}
+                                    <small>{{ dato.fechas.0 }}</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if dato.mercados %}
+                                    <span class="badge-market">{{ dato.mercados.0 }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if dato.anos %}
+                                    <span class="badge bg-secondary">{{ dato.anos.0 }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if dato.factores %}
+                                    <span class="badge bg-warning text-dark">{{ dato.factores.0 }}</span>
+                                {% elif dato.montos %}
+                                    <span class="badge bg-info text-dark">{{ dato.montos.0 }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <small>{{ dato.texto_completo|default:"Extraído de PDF" }}</small>
+                            </td>
+
+                            <td>
+                                <span class="badge bg-light text-dark">Pág {{ dato.pagina }}</span>
+                            </td>
+                        </tr>
+
+                        <!-- Hidden Fields -->
+                        <input type="hidden" name="fecha_{{ forloop.counter0 }}" value="{{ dato.fechas.0|default:'' }}">
+                        <input type="hidden" name="mercado_{{ forloop.counter0 }}" value="{{ dato.mercados.0|default:'' }}">
+                        <input type="hidden" name="ano_{{ forloop.counter0 }}" value="{{ dato.anos.0|default:'' }}">
+                        <input type="hidden" name="factor_{{ forloop.counter0 }}" value="{{ dato.factores.0|default:'' }}">
+                        <input type="hidden" name="descripcion_{{ forloop.counter0 }}" value="{{ dato.texto_completo|default:'Extraído de PDF' }}">
+
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer d-flex justify-content-between">
+                <div><strong id="selectedCount">{{ datos_extraidos|length }}</strong> registros seleccionados</div>
+
+                <div>
+                    <button type="button" class="btn btn-outline-secondary me-2" onclick="deselectAll()">Deseleccionar Todos</button>
+                    <button type="submit" class="btn btn-nuam">Guardar Datos Seleccionados</button>
                 </div>
             </div>
-        </div>
+
+        </form>
     </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <h5 class="text-muted">No se encontraron datos en el PDF</h5>
+        <a href="{% url 'extraer_datos_pdf' %}" class="btn btn-nuam">Procesar otro PDF</a>
+    </div>
+    {% endif %}
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Seleccionar/Deseleccionar todos
     document.getElementById('selectAll').addEventListener('change', function() {
         const checkboxes = document.querySelectorAll('input[name="datos_seleccionados"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
+        checkboxes.forEach(c => c.checked = this.checked);
         updateSelectedCount();
     });
 
-    // Actualizar contador
-    function updateSelectedCount() {
-        const selected = document.querySelectorAll('input[name="datos_seleccionados"]:checked').length;
-        document.getElementById('selectedCount').textContent = selected;
-    }
-
-    // Deseleccionar todos
     function deselectAll() {
         document.getElementById('selectAll').checked = false;
-        const checkboxes = document.querySelectorAll('input[name="datos_seleccionados"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = false;
-        });
+        document.querySelectorAll('input[name="datos_seleccionados"]').forEach(c => c.checked = false);
         updateSelectedCount();
     }
 
-    // Actualizar contador cuando cambien las casillas
-    document.addEventListener('DOMContentLoaded', function() {
-        const checkboxes = document.querySelectorAll('input[name="datos_seleccionados"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', updateSelectedCount);
-        });
-    });
+    function updateSelectedCount() {
+        const count = document.querySelectorAll('input[name="datos_seleccionados"]:checked').length;
+        document.getElementById('selectedCount').textContent = count;
+    }
 </script>
 
 </body>

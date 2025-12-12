@@ -65,7 +65,7 @@
                 <span class="navbar-text text-white me-3">
                     {{ request.session.usuario_nombre }}
                 </span>
-                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-light">Volver al Dashboard</a>
+                <a href="{% url 'dashboard_corredor' %}" class="btn btn-sm btn-outline-light">Volver al Dashboard</a>
             </div>
         </div>
     </nav>
@@ -131,7 +131,7 @@
                             </div>
                             
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <a href="{% url 'dashboard' %}" class="btn btn-cancelar me-2">Cancelar</a>
+                                <a href="{% url 'dashboard_corredor' %}" class="btn btn-cancelar me-2">Cancelar</a>
                                 <button type="submit" class="btn btn-nuam">Actualizar Calificación</button>
                             </div>
                         </form>
