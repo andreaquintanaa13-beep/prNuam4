@@ -56,14 +56,10 @@ TEMPLATES = [
 # Base de datos
 # -----------------------------
 import dj_database_url
-
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-        ssl_require=not DEBUG
-    )
+    'default': dj_database_url.config(default='postgres://prnuam_db_vpod_user:JuXYYUcjmP9Ld9IUUTMlLOmFS8JMwUo2@dpg-d4tmkt15pdvs73e7tj10-a:5432/prnuam_db_vpod')
 }
+
 
 
 
