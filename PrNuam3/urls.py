@@ -32,7 +32,7 @@ urlpatterns = [
     path('detalles-carga/<int:carga_id>/', views.ver_detalles_carga, name='detalles_carga'),
     path('descargar-carga/<int:carga_id>/', views.descargar_reporte_carga, name='descargar_carga'),
     path('extraer-datos-pdf/', views.extraer_datos_pdf, name='extraer_datos_pdf'),
-    path('guardar-datos-pdf/', views.guardar_datos_extraidos, name='guardar_datos_pdf'),
+    path('guardar-datos-pdf/', views.guardar_datos_extraidos, name='guardar_datos_extraidos'),
     # ERROR DE PERMISOS
     path("no-autorizado/", views.no_autorizado, name="no_autorizado"),
     path("fix-passwords/", views.fix_passwords),
