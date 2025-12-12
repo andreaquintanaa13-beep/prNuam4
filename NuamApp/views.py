@@ -1170,8 +1170,10 @@ def health_check(request):
 
 from django.contrib.auth.models import User
 
-def crear_admin(request):
-    if not User.objects.filter(username="admin").exists():
-        User.objects.create_superuser("admin", "admin@correo.com", "admin123")
-        return HttpResponse("Superusuario creado")
-    return HttpResponse("Ya existe")
+def create_superadmin():
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='admin123'
+        )
