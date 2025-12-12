@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Extraer Datos de PDF - NUAM</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --naranja-oscuro: #D35400;
@@ -31,44 +32,46 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
+        .card-success {
+            border-left: 4px solid #28a745 !important;
+        }
+        
         .btn-nuam { 
             background-color: var(--naranja-oscuro); 
             border: none; 
             color: white; 
             font-weight: 600;
+            padding: 0.75rem 1.5rem;
         }
         
         .btn-nuam:hover { 
             background-color: var(--naranja); 
         }
         
-        .btn-agregar { 
-            background-color: var(--naranja-claro);
+        .btn-success { 
+            background-color: #28a745;
             border: none; 
             color: white; 
             font-weight: 600;
+            padding: 0.75rem 1.5rem;
         }
         
-        .btn-agregar:hover { 
-            background-color: var(--naranja); 
+        .btn-success:hover { 
+            background-color: #218838; 
         }
         
-        .btn-outline-nuam { 
-            border: 1px solid var(--naranja-oscuro); 
-            color: var(--naranja-oscuro); 
+        .btn-outline-secondary { 
+            border: 1px solid #6c757d; 
+            color: #6c757d; 
             font-weight: 600;
         }
         
-        .btn-outline-nuam:hover { 
-            background-color: var(--naranja-oscuro); 
-            color: white; 
-        }
-        
         .welcome-section {
-            background: var(--naranja-oscuro);
+            background: linear-gradient(135deg, var(--naranja-oscuro), var(--naranja));
             color: white;
             border-radius: 12px;
             padding: 2rem;
+            margin-bottom: 2rem;
         }
         
         .table-custom {
@@ -76,11 +79,14 @@
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 0;
         }
         
         .table-custom thead {
             background-color: var(--naranja-oscuro);
             color: white;
+            position: sticky;
+            top: 0;
         }
         
         .table-custom th {
@@ -92,6 +98,7 @@
         .table-custom td {
             padding: 1rem;
             vertical-align: middle;
+            border-top: 1px solid #dee2e6;
         }
         
         .badge-market {
@@ -129,8 +136,11 @@
         }
         
         .data-preview {
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
         }
         
         .format-example {
@@ -141,8 +151,61 @@
         }
         
         .checkbox-cell {
-            width: 50px;
+            width: 60px;
             text-align: center;
+        }
+        
+        .confirmation-table {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .page-badge {
+            background-color: rgba(211, 84, 0, 0.1);
+            color: var(--naranja-oscuro);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85em;
+        }
+        
+        .amount-cell {
+            font-weight: bold;
+            color: var(--naranja-oscuro);
+        }
+        
+        /* Checkbox personalizado */
+        .form-check-input:checked {
+            background-color: var(--naranja-oscuro);
+            border-color: var(--naranja-oscuro);
+        }
+        
+        /* Estilos para la tabla de confirmación */
+        .confirmation-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .summary-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--naranja-oscuro);
+        }
+        
+        .summary-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
@@ -151,15 +214,16 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-nuam">
         <div class="container-fluid">
-            <span class="navbar-brand text-white">NUAM - Procesar PDF</span>
+            <span class="navbar-brand text-white">
+                <i class="fas fa-file-pdf"></i> NUAM - Procesar PDF
+            </span>
             <div class="navbar-nav ms-auto">
                 <span class="navbar-text text-white me-3">
-                    {{ request.session.usuario_nombre }}
+                    <i class="fas fa-user"></i> {{ request.session.usuario_nombre }}
                 </span>
                 <a href="{% url 'dashboard_corredor' %}" class="btn btn-sm btn-outline-light me-2">
-                    ← Volver al Dashboard
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
                 </a>
-                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">Cerrar Sesión</a>
             </div>
         </div>
     </nav>
@@ -172,8 +236,13 @@
             <div class="welcome-section">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h1 class="display-6">Extraer Datos de PDF</h1>
+                        <h1 class="display-6">
+                            <i class="fas fa-file-pdf"></i> Extraer Datos de PDF
+                        </h1>
                         <p class="mb-0">Sube archivos PDF para extraer calificaciones automáticamente</p>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-magic fa-3x opacity-75"></i>
                     </div>
                 </div>
             </div>
@@ -184,13 +253,164 @@
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
-                {{ message }}
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message|safe }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         {% endfor %}
     {% endif %}
 
-    <!-- Formulario de Subida -->
+    <!-- SECCIÓN DE CONFIRMACIÓN (cuando hay datos extraídos) -->
+    {% if mostrar_confirmacion and datos_extraidos %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-dashboard card-success">
+                <div class="card-header confirmation-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle"></i> 
+                        Datos Extraídos del PDF
+                    </h4>
+                    <p class="mb-0 mt-2">
+                        <strong>{{ archivo_nombre }}</strong> | 
+                        {{ total_registros }} registros encontrados | 
+                        Selecciona los que deseas guardar
+                    </p>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Resumen de datos -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="summary-card text-center">
+                                <div class="summary-number">{{ total_registros }}</div>
+                                <div class="summary-label">Registros Encontrados</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-card text-center">
+                                <div class="summary-number">
+                                    <span id="selected-count">{{ total_registros }}</span>/{{ total_registros }}
+                                </div>
+                                <div class="summary-label">Seleccionados</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="summary-card">
+                                <h6><i class="fas fa-info-circle text-info me-2"></i>Instrucciones:</h6>
+                                <p class="mb-0 small">
+                                    1. Revisa los datos extraídos<br>
+                                    2. Desmarca registros que no desees guardar<br>
+                                    3. Modifica las descripciones si es necesario<br>
+                                    4. Haz clic en "Guardar Registros Seleccionados"
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post" action="{% url 'guardar_datos_extraidos' %}" id="confirmationForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="archivo_nombre" value="{{ archivo_nombre }}">
+                        
+                        <div class="confirmation-table mb-4">
+                            <table class="table table-hover table-custom">
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-cell">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="select-all" checked>
+                                            </div>
+                                        </th>
+                                        <th>Fecha</th>
+                                        <th>Mercado</th>
+                                        <th>Año</th>
+                                        <th>Monto/Factor</th>
+                                        <th>Descripción</th>
+                                        <th>Página</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for dato in datos_extraidos %}
+                                    <tr>
+                                        <td class="checkbox-cell">
+                                            <div class="form-check">
+                                                <input class="form-check-input registro-checkbox" 
+                                                       type="checkbox" 
+                                                       name="incluir_{{ forloop.counter0 }}" 
+                                                       value="on" 
+                                                       checked
+                                                       data-index="{{ forloop.counter0 }}">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" 
+                                                   name="fecha_{{ forloop.counter0 }}" 
+                                                   value="{{ dato.fecha_formateada }}">
+                                            <strong>{{ dato.fecha }}</strong>
+                                            <br>
+                                            <small class="text-muted">({{ dato.fecha_formateada }})</small>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" 
+                                                   name="mercado_{{ forloop.counter0 }}" 
+                                                   value="{{ dato.mercado }}">
+                                            <span class="badge-market">{{ dato.mercado }}</span>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" 
+                                                   name="ano_{{ forloop.counter0 }}" 
+                                                   value="{{ dato.ano }}">
+                                            <span class="fw-bold">{{ dato.ano }}</span>
+                                        </td>
+                                        <td class="amount-cell">
+                                            <input type="hidden" 
+                                                   name="monto_{{ forloop.counter0 }}" 
+                                                   value="{{ dato.monto_original }}">
+                                            $ {{ dato.monto_original }}
+                                            <br>
+                                            <small class="text-muted">({{ dato.monto_valor|floatformat:2 }})</small>
+                                        </td>
+                                        <td>
+                                            <input type="text" 
+                                                   name="descripcion_{{ forloop.counter0 }}" 
+                                                   value="{{ dato.descripcion }}"
+                                                   class="form-control form-control-sm"
+                                                   placeholder="Descripción del registro">
+                                        </td>
+                                        <td>
+                                            <span class="page-badge">
+                                                <i class="fas fa-file-alt"></i> Pág. {{ dato.pagina }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <div>
+                                <button type="submit" class="btn btn-success btn-lg" id="saveButton">
+                                    <i class="fas fa-save"></i> 
+                                    Guardar <span id="save-count">{{ total_registros }}</span> Registros
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <a href="{% url 'extraer_datos_pdf' %}" class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-redo"></i> Subir Otro PDF
+                                </a>
+                                <a href="{% url 'dashboard_corredor' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- FORMULARIO DE SUBIDA (cuando no hay datos extraídos) -->
     <div class="row mb-4">
         <div class="col-md-8 mx-auto">
             <div class="card card-dashboard">
@@ -208,18 +428,21 @@
                             <h4>Arrastra tu archivo PDF aquí</h4>
                             <p class="text-muted">o haz clic para seleccionar</p>
                             <button type="button" class="btn btn-nuam" onclick="document.getElementById('archivo_pdf').click()">
-                                Seleccionar Archivo
+                                <i class="fas fa-search"></i> Seleccionar Archivo
                             </button>
                         </div>
                         
                         <div id="fileName" class="mt-3 text-center" style="display: none;">
-                            <strong>Archivo seleccionado:</strong> 
-                            <span id="fileDisplay" class="text-success"></span>
+                            <div class="alert alert-success d-inline-block">
+                                <i class="fas fa-check-circle"></i>
+                                <strong>Archivo seleccionado:</strong> 
+                                <span id="fileDisplay" class="fw-bold"></span>
+                            </div>
                         </div>
                         
                         <div class="mt-4 text-center">
                             <button type="submit" class="btn btn-nuam btn-lg" id="submitBtn" disabled>
-                                <i class="fas fa-search"></i> Extraer Datos del PDF
+                                <i class="fas fa-magic"></i> Extraer Datos del PDF
                             </button>
                         </div>
                     </form>
@@ -233,32 +456,40 @@
         <div class="col-md-8 mx-auto">
             <div class="card card-dashboard">
                 <div class="card-header">
-                    <h5 class="mb-0">Formatos de PDF Soportados</h5>
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Formatos de PDF Soportados</h5>
                 </div>
                 <div class="card-body">
-                    <p>El sistema puede extraer datos de PDFs con estos formatos:</p>
+                    <p class="mb-3">El sistema puede extraer datos de PDFs con estos formatos:</p>
                     
-                    <div class="format-example">
-                        <h6>📊 Formato Calificaciones:</h6>
-                        <code>Fecha: 2023-12-15 Mercado: Acciones Año: 2023 Factor: 1.5000</code>
-                    </div>
-                    
-                    <div class="format-example">
-                        <h6>📋 Formato Tablas:</h6>
-                        <code>| 2023-12-15 | Acciones | 2023 | 1500000 | Descripción de la operación |</code>
-                    </div>
-                    
-                    <div class="format-example">
-                        <h6>💰 Formato Factores:</h6>
-                        <code>Factor Liquidez: 85<br>Factor Riesgo: 120</code>
-                    </div>
-                    
-                    <div class="format-example">
-                        <h6>📝 Texto Estructurado:</h6>
-                        <code>Operación del 15/12/2023 en mercado de Acciones para el año 2023 con monto de 1,500,000</code>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="format-example">
+                                <h6><i class="fas fa-table text-primary me-2"></i>Formato Calificaciones:</h6>
+                                <code class="d-block p-2 bg-light rounded">Fecha: 2023-12-15 Mercado: Acciones Año: 2023 Factor: 1.5000</code>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="format-example">
+                                <h6><i class="fas fa-list text-primary me-2"></i>Formato Tablas:</h6>
+                                <code class="d-block p-2 bg-light rounded">| 2023-12-15 | Acciones | 2023 | 1500000 | Descripción |</code>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="format-example">
+                                <h6><i class="fas fa-calculator text-primary me-2"></i>Formato Factores:</h6>
+                                <code class="d-block p-2 bg-light rounded">Factor Liquidez: 85<br>Factor Riesgo: 120</code>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="format-example">
+                                <h6><i class="fas fa-align-left text-primary me-2"></i>Texto Estructurado:</h6>
+                                <code class="d-block p-2 bg-light rounded">Operación del 15/12/2023 en mercado de Acciones para el año 2023 con monto de 1,500,000</code>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="alert alert-info mt-3">
+                        <i class="fas fa-lightbulb me-2"></i>
                         <strong>💡 Tip:</strong> El sistema buscará automáticamente estos patrones en tu PDF 
                         y te mostrará los datos encontrados para que selecciones cuáles guardar.
                     </div>
@@ -267,15 +498,61 @@
         </div>
     </div>
 
+    <!-- Historial de cargas recientes -->
+    {% if cargas_recientes %}
+    <div class="row mt-4">
+        <div class="col-md-8 mx-auto">
+            <div class="card card-dashboard">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Últimas Cargas de PDF</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for carga in cargas_recientes %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ carga.archivo_url|truncatechars:50 }}</h6>
+                                    <small class="text-muted">{{ carga.fecha_carga|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-{% if carga.estado == 'completado' %}success{% elif carga.estado == 'error' %}danger{% else %}warning{% endif %}">
+                                        {{ carga.estado|title }}
+                                    </span>
+                                    {% if carga.registros_procesados %}
+                                    <span class="badge bg-info ms-1">
+                                        {{ carga.registros_procesados }} reg.
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item text-center text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay cargas de PDF recientes</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // ====== FUNCIONALIDAD PARA LA PÁGINA DE SUBIDA ======
+    
     // Manejar la selección de archivos
     document.getElementById('archivo_pdf').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
-            document.getElementById('fileDisplay').textContent = file.name;
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            document.getElementById('fileDisplay').textContent = `${file.name} (${fileSizeMB} MB)`;
             document.getElementById('fileName').style.display = 'block';
             document.getElementById('submitBtn').disabled = false;
         }
@@ -302,7 +579,9 @@
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             fileInput.files = files;
-            document.getElementById('fileDisplay').textContent = files[0].name;
+            const file = files[0];
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            document.getElementById('fileDisplay').textContent = `${file.name} (${fileSizeMB} MB)`;
             document.getElementById('fileName').style.display = 'block';
             document.getElementById('submitBtn').disabled = false;
         }
@@ -314,10 +593,84 @@
     });
 
     // Mostrar loading al enviar
-    document.getElementById('pdfForm').addEventListener('submit', function() {
+    document.getElementById('pdfForm')?.addEventListener('submit', function() {
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando PDF...';
         submitBtn.disabled = true;
+    });
+
+    // ====== FUNCIONALIDAD PARA LA PÁGINA DE CONFIRMACIÓN ======
+    
+    // Seleccionar/deseleccionar todos los checkboxes
+    const selectAllCheckbox = document.getElementById('select-all');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.registro-checkbox');
+            const isChecked = this.checked;
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            
+            updateSelectedCount();
+        });
+    }
+
+    // Actualizar contador de seleccionados
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('.registro-checkbox');
+        const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        const totalCount = checkboxes.length;
+        
+        document.getElementById('selected-count').textContent = selectedCount;
+        document.getElementById('save-count').textContent = selectedCount;
+        
+        // Actualizar el checkbox "select all"
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = selectedCount === totalCount;
+            selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < totalCount;
+        }
+    }
+
+    // Escuchar cambios en los checkboxes individuales
+    document.querySelectorAll('.registro-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+
+    // Inicializar contador
+    if (document.querySelector('.registro-checkbox')) {
+        updateSelectedCount();
+    }
+
+    // Mostrar loading al guardar
+    document.getElementById('confirmationForm')?.addEventListener('submit', function() {
+        const saveButton = document.getElementById('saveButton');
+        const selectedCount = document.getElementById('save-count').textContent;
+        
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando ' + selectedCount + ' registros...';
+        saveButton.disabled = true;
+        
+        // Deshabilitar todos los checkboxes
+        document.querySelectorAll('.registro-checkbox').forEach(checkbox => {
+            checkbox.disabled = true;
+        });
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.disabled = true;
+        }
+    });
+
+    // Validar tamaño máximo del archivo (10MB)
+    document.getElementById('archivo_pdf')?.addEventListener('change', function() {
+        const file = this.files[0];
+        const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+        
+        if (file && file.size > maxSize) {
+            alert('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
+            this.value = ''; // Limpiar el input
+            document.getElementById('fileName').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+        }
     });
 </script>
 

@@ -1165,81 +1165,296 @@ def eliminar_usuario(request, usuario_id):
 
 @login_required_custom
 def extraer_datos_pdf(request):
+    """Vista mejorada para extraer datos de PDF - Compatible con el template actual"""
     if request.method == 'POST' and request.FILES.get('archivo_pdf'):
         archivo_pdf = request.FILES['archivo_pdf']
-
+        
         try:
             usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
             corredor = Corredor.objects.get(fk_usuario=usuario)
+            
+            # Registrar auditoría
+            Auditoria.objects.create(
+                accion='CARGA_PDF_INICIO',
+                fecha_hora=timezone.now(),
+                resultado=f'Inicio procesamiento PDF: {archivo_pdf.name}',
+                fk_usuario=usuario
+            )
+            
             datos_extraidos = []
-
+            registros_validos = []
+            
             with pdfplumber.open(archivo_pdf) as pdf:
+                total_paginas = len(pdf.pages)
+                
                 for page_num, page in enumerate(pdf.pages, start=1):
+                    # Extraer texto de la página
                     text = page.extract_text()
-                    if not text:
-                        continue  # saltar página vacía
                     
-                    # PATRONES MEJORADOS - más flexibles
-                    patrones = [
-                        # Patrón 1: Buscar formato con etiquetas
-                        r'(?:Fecha|Date)[:\s]*(\d{2,4}[-/]\d{1,2}[-/]\d{2,4}).*?(?:Mercado|Market)[:\s]*([A-Za-zñÑáéíóúÁÉÍÓÚ\s]+).*?(?:Año|Year)[:\s]*(\d{4}).*?(?:Monto|Factor|Amount|Value)[:\s]*([\d\.,]+)',
-                        
-                        # Patrón 2: Buscar por estructura de tabla
-                        r'(\d{4}-\d{2}-\d{2})\s+([A-Za-z]+)\s+(\d{4})\s+([\d\.,]+)',
-                        
-                        # Patrón 3: Buscar cualquier número grande cerca de una fecha
-                        r'(\d{4}-\d{2}-\d{2})[^0-9]{0,50}([\d]{1,3}(?:\.\d{3})*(?:,\d{2})?)',
-                    ]
+                    if not text or len(text.strip()) < 10:
+                        continue  # Saltar páginas vacías
                     
-                    for patron in patrones:
-                        matches = re.findall(patron, text, re.IGNORECASE | re.DOTALL)
+                    print(f"=== DEBUG: Procesando página {page_num} ===")
+                    print(f"Texto extraído (primeros 500 chars): {text[:500]}")
+                    
+                    # ====== PATRONES DE BÚSQUEDA MEJORADOS ======
+                    
+                    # 1. Patrón: Fecha - Mercado - Año - Monto
+                    patron1 = r'(\d{2,4}[-/]\d{1,2}[-/]\d{2,4})[^\d]*(Acciones|Bonos|Derivados|Monedas)[^\d]*(\d{4})[^\d]*([\d\.,]+)'
+                    matches1 = re.findall(patron1, text, re.IGNORECASE | re.DOTALL)
+                    
+                    for match in matches1:
+                        if len(match) == 4:
+                            registro = {
+                                'fecha': match[0],
+                                'mercado': match[1],
+                                'ano': match[2],
+                                'monto_original': match[3],
+                                'descripcion': f'PDF Página {page_num} - Patrón directo',
+                                'pagina': page_num
+                            }
+                            registros_validos.append(registro)
+                    
+                    # 2. Patrón: Buscar líneas con montos grandes
+                    lineas = text.split('\n')
+                    for linea_num, linea in enumerate(lineas):
+                        linea = linea.strip()
+                        if len(linea) < 20:
+                            continue
                         
-                        for match in matches:
-                            if len(match) >= 4:
+                        # Buscar números grandes (montos)
+                        montos = re.findall(r'(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:,\d{2})?)', linea)
+                        if montos:
+                            # Filtrar montos válidos (grandes)
+                            montos_validos = []
+                            for monto in montos:
                                 try:
-                                    fecha = match[0]
-                                    mercado = match[1].strip()
-                                    ano = match[2]
-                                    monto_str = match[3]
-                                    
-                                    # Limpiar y convertir monto
-                                    monto_str = monto_str.replace('.', '').replace(',', '.')
-                                    monto_val = float(monto_str)
-                                    
-                                    # Validar y normalizar mercado
-                                    mercado = mercado.capitalize()
-                                    if 'accion' in mercado.lower():
-                                        mercado = 'Acciones'
-                                    elif 'bono' in mercado.lower():
-                                        mercado = 'Bonos'
-                                    elif 'derivad' in mercado.lower():
-                                        mercado = 'Derivados'
-                                    elif 'moneda' in mercado.lower():
-                                        mercado = 'Monedas'
-                                    
-                                    datos_extraidos.append({
+                                    # Limpiar monto
+                                    monto_limpio = monto.replace('.', '').replace(',', '.')
+                                    valor = float(monto_limpio)
+                                    if valor > 100:  # Solo montos significativos
+                                        montos_validos.append({
+                                            'texto': monto,
+                                            'valor': valor,
+                                            'posicion': linea.find(monto)
+                                        })
+                                except:
+                                    continue
+                            
+                            if montos_validos:
+                                # Ordenar por valor (más grande primero)
+                                montos_validos.sort(key=lambda x: x['valor'], reverse=True)
+                                monto_seleccionado = montos_validos[0]
+                                
+                                # Buscar fecha en la misma línea
+                                fecha_match = re.search(r'(\d{2,4}[-/]\d{1,2}[-/]\d{2,4})', linea)
+                                fecha = fecha_match.group(1) if fecha_match else None
+                                
+                                # Buscar mercado en la misma línea
+                                mercado = None
+                                mercados = ['Acciones', 'Bonos', 'Derivados', 'Monedas']
+                                for m in mercados:
+                                    if m.lower() in linea.lower():
+                                        mercado = m
+                                        break
+                                
+                                # Buscar año en la misma línea
+                                ano_match = re.search(r'(?:20\d{2})', linea)
+                                ano = ano_match.group(0) if ano_match else str(date.today().year)
+                                
+                                if fecha and mercado:
+                                    registro = {
                                         'fecha': fecha,
                                         'mercado': mercado,
                                         'ano': ano,
-                                        'factor': monto_val,
-                                        'descripcion': f'PDF Página {page_num}'
-                                    })
-                                except Exception as e:
-                                    print(f"Error procesando match: {match}, error: {e}")
-                                    continue
-
-            # Pasar datos a template para revisión antes de guardar
-            return render(request, 'template_cargas/extraer_datos_pdf.html', {
-                'datos_extraidos': datos_extraidos,
-                'archivo_nombre': archivo_pdf.name,
-                'total_registros': len(datos_extraidos)
-            })
-
+                                        'monto_original': monto_seleccionado['texto'],
+                                        'descripcion': f'PDF Página {page_num} - Línea {linea_num+1}',
+                                        'pagina': page_num,
+                                        'linea': linea
+                                    }
+                                    registros_validos.append(registro)
+                    
+                    # 3. Patrón: Buscar tablas estructuradas
+                    # Si la página tiene tablas, extraerlas
+                    if page.extract_tables():
+                        tables = page.extract_tables()
+                        for table_num, table in enumerate(tables):
+                            for row_num, row in enumerate(table):
+                                # Unir todas las celdas del row
+                                row_text = ' '.join([str(cell) for cell in row if cell])
+                                
+                                # Buscar fecha
+                                fecha_match = re.search(r'(\d{2,4}[-/]\d{1,2}[-/]\d{2,4})', row_text)
+                                # Buscar monto
+                                monto_match = re.search(r'(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)', row_text)
+                                # Buscar mercado
+                                mercado = None
+                                for m in ['Acciones', 'Bonos', 'Derivados', 'Monedas']:
+                                    if m.lower() in row_text.lower():
+                                        mercado = m
+                                        break
+                                # Buscar año
+                                ano_match = re.search(r'(?:20\d{2})', row_text)
+                                
+                                if fecha_match and monto_match and mercado:
+                                    registro = {
+                                        'fecha': fecha_match.group(1),
+                                        'mercado': mercado,
+                                        'ano': ano_match.group(0) if ano_match else str(date.today().year),
+                                        'monto_original': monto_match.group(1),
+                                        'descripcion': f'PDF Página {page_num} - Tabla {table_num+1}, Fila {row_num+1}',
+                                        'pagina': page_num
+                                    }
+                                    registros_validos.append(registro)
+            
+            # Procesar y formatear los registros encontrados
+            for i, registro in enumerate(registros_validos):
+                try:
+                    # Formatear fecha
+                    fecha_str = registro['fecha']
+                    fecha_formateada = fecha_str
+                    
+                    if '/' in fecha_str:
+                        partes = fecha_str.split('/')
+                        if len(partes) == 3:
+                            dia, mes, ano = partes
+                            if len(ano) == 2:
+                                ano = '20' + ano
+                            fecha_formateada = f"{ano}-{mes.zfill(2)}-{dia.zfill(2)}"
+                    elif '-' in fecha_str:
+                        # Ya está en formato ISO o similar
+                        pass
+                    
+                    # Limpiar y convertir monto
+                    monto_str = str(registro['monto_original'])
+                    monto_limpio = monto_str.replace('.', '').replace(',', '.').strip()
+                    # Remover caracteres no numéricos excepto punto
+                    monto_limpio = re.sub(r'[^\d.]', '', monto_limpio)
+                    
+                    try:
+                        monto_valor = float(monto_limpio)
+                    except:
+                        monto_valor = 0.0
+                    
+                    datos_extraidos.append({
+                        'index': i,
+                        'fecha': registro['fecha'],
+                        'fecha_formateada': fecha_formateada,
+                        'mercado': registro['mercado'],
+                        'ano': registro['ano'],
+                        'monto_original': registro['monto_original'],
+                        'monto_valor': monto_valor,
+                        'descripcion': registro['descripcion'],
+                        'pagina': registro['pagina']
+                    })
+                    
+                except Exception as e:
+                    print(f"Error procesando registro {i}: {e}")
+                    continue
+            
+            # Filtrar duplicados (misma fecha, mercado, año y monto similar)
+            datos_unicos = []
+            visto = set()
+            for dato in datos_extraidos:
+                clave = f"{dato['fecha_formateada']}_{dato['mercado']}_{dato['ano']}_{dato['monto_valor']:.2f}"
+                if clave not in visto:
+                    visto.add(clave)
+                    datos_unicos.append(dato)
+            
+            # Registrar resultados
+            Auditoria.objects.create(
+                accion='CARGA_PDF_EXTRAIDO',
+                fecha_hora=timezone.now(),
+                resultado=f'Encontrados {len(datos_unicos)} registros únicos de {len(registros_validos)} posibles',
+                fk_usuario=usuario
+            )
+            
+            # Si se encontraron datos, mostrar para confirmación
+            if datos_unicos:
+                # Obtener cargas recientes para el sidebar
+                cargas_recientes = Archivocarga.objects.filter(
+                    fk_id_usuario=usuario,
+                    tipo_archivo='pdf_calificaciones'
+                ).order_by('-fecha_carga')[:5]
+                
+                return render(request, 'template_cargas/extraer_datos_pdf.html', {
+                    'datos_extraidos': datos_unicos,
+                    'archivo_nombre': archivo_pdf.name,
+                    'total_registros': len(datos_unicos),
+                    'mostrar_confirmacion': True,
+                    'cargas_recientes': cargas_recientes
+                })
+            else:
+                # No se encontraron datos
+                messages.warning(request, 
+                    f'No se encontraron datos extraíbles en el PDF "{archivo_pdf.name}". '
+                    f'Verifica que el PDF contenga información estructurada con:'
+                    f'<ul class="mb-0 mt-2">'
+                    f'<li>Fechas (ej: 2023-12-15 o 15/12/2023)</li>'
+                    f'<li>Mercados (Acciones, Bonos, Derivados, Monedas)</li>'
+                    f'<li>Montos o factores (números grandes)</li>'
+                    f'<li>Años (2023, 2024, etc.)</li>'
+                    f'</ul>'
+                )
+                
+                # Obtener cargas recientes para el sidebar
+                cargas_recientes = Archivocarga.objects.filter(
+                    fk_id_usuario=usuario,
+                    tipo_archivo='pdf_calificaciones'
+                ).order_by('-fecha_carga')[:5]
+                
+                return render(request, 'template_cargas/extraer_datos_pdf.html', {
+                    'mostrar_confirmacion': False,
+                    'cargas_recientes': cargas_recientes
+                })
+                
         except Exception as e:
-            messages.error(request, f"Error procesando PDF: {str(e)}")
-            return redirect('extraer_datos_pdf')
-
-    return render(request, 'template_cargas/extraer_datos_pdf.html')
+            error_msg = f'Error procesando PDF: {str(e)}'
+            print(f"ERROR en extraer_datos_pdf: {error_msg}")
+            
+            messages.error(request, error_msg)
+            
+            try:
+                usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
+                Auditoria.objects.create(
+                    accion='CARGA_PDF_ERROR',
+                    fecha_hora=timezone.now(),
+                    resultado=f'Error: {str(e)[:100]}...',
+                    fk_usuario=usuario
+                )
+            except:
+                pass
+            
+            # Obtener cargas recientes para el sidebar
+            try:
+                usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
+                cargas_recientes = Archivocarga.objects.filter(
+                    fk_id_usuario=usuario,
+                    tipo_archivo='pdf_calificaciones'
+                ).order_by('-fecha_carga')[:5]
+            except:
+                cargas_recientes = []
+            
+            return render(request, 'template_cargas/extraer_datos_pdf.html', {
+                'mostrar_confirmacion': False,
+                'cargas_recientes': cargas_recientes
+            })
+    
+    # GET request - mostrar formulario vacío
+    # Obtener cargas recientes para el sidebar
+    try:
+        usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
+        cargas_recientes = Archivocarga.objects.filter(
+            fk_id_usuario=usuario,
+            tipo_archivo='pdf_calificaciones'
+        ).order_by('-fecha_carga')[:5]
+    except:
+        cargas_recientes = []
+    
+    return render(request, 'template_cargas/extraer_datos_pdf.html', {
+        'mostrar_confirmacion': False,
+        'cargas_recientes': cargas_recientes
+    })
 
 
 def buscar_patrones_calificaciones(texto, pagina):
@@ -1270,49 +1485,118 @@ def buscar_patrones_calificaciones(texto, pagina):
 
 @login_required_custom
 def guardar_datos_extraidos(request):
+    """Guardar datos extraídos del PDF después de confirmación"""
     if request.method == 'POST':
         try:
             usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
             corredor = Corredor.objects.get(fk_usuario=usuario)
-
-            datos_seleccionados = request.POST.getlist('datos_seleccionados')
+            
             registros_guardados = 0
-
-            for dato_idx in datos_seleccionados:
-                fecha = request.POST.get(f'fecha_{dato_idx}')
-                mercado = request.POST.get(f'mercado_{dato_idx}')
-                ano = request.POST.get(f'ano_{dato_idx}')
-                factor = request.POST.get(f'factor_{dato_idx}')
-                descripcion = request.POST.get(f'descripcion_{dato_idx}')
-
-                if all([fecha, mercado, ano, factor]):
-                    # Convertir fecha
+            registros_fallidos = 0
+            
+            # Obtener todos los registros del formulario
+            i = 0
+            while True:
+                # Buscar campos con el patrón registro_X
+                fecha = request.POST.get(f'fecha_{i}')
+                if fecha is None:  # No hay más registros
+                    break
+                
+                mercado = request.POST.get(f'mercado_{i}')
+                ano = request.POST.get(f'ano_{i}')
+                monto = request.POST.get(f'monto_{i}')
+                descripcion = request.POST.get(f'descripcion_{i}', '')
+                incluir = request.POST.get(f'incluir_{i}', 'off')
+                
+                # Solo procesar si está marcado para incluir
+                if incluir == 'on' and fecha and mercado and ano and monto:
                     try:
-                        fecha_dt = datetime.strptime(fecha, '%Y-%m-%d').date()
-                    except:
-                        # Intentar otro formato
-                        fecha_dt = datetime.strptime(fecha, '%d/%m/%Y').date()
-                    
-                    # Limpiar factor
-                    factor_val = float(factor.replace('.', '').replace(',', '.'))
-                    
-                    Calificacion.objects.create(
-                        fecha=fecha_dt,
-                        mercado=mercado,
-                        ano=int(ano),
-                        factor_actualizado=factor_val,
-                        descripcion=descripcion,
-                        fk_id_corredor=corredor
-                    )
-                    registros_guardados += 1
-
-            messages.success(request, f"{registros_guardados} registros guardados desde PDF")
+                        # Convertir fecha
+                        try:
+                            fecha_dt = datetime.strptime(fecha, '%Y-%m-%d').date()
+                        except:
+                            # Intentar otros formatos
+                            if '/' in fecha:
+                                partes = fecha.split('/')
+                                if len(partes) == 3:
+                                    fecha_dt = date(int(partes[2]), int(partes[1]), int(partes[0]))
+                                else:
+                                    fecha_dt = date.today()
+                            else:
+                                fecha_dt = date.today()
+                        
+                        # Limpiar monto
+                        monto_limpio = str(monto).replace('.', '').replace(',', '.').strip()
+                        # Remover símbolos de moneda
+                        monto_limpio = re.sub(r'[^\d.]', '', monto_limpio)
+                        
+                        # Verificar que sea un número válido
+                        if not monto_limpio.replace('.', '', 1).isdigit():
+                            raise ValueError(f"Monto no válido: {monto}")
+                            
+                        monto_valor = float(monto_limpio)
+                        
+                        # Crear calificación
+                        Calificacion.objects.create(
+                            fecha=fecha_dt,
+                            mercado=mercado.capitalize(),
+                            ano=int(ano),
+                            factor_actualizado=monto_valor,
+                            descripcion=descripcion,
+                            fk_id_corredor=corredor,
+                            origen='pdf'
+                        )
+                        
+                        registros_guardados += 1
+                        print(f"✅ Registro guardado: {fecha_dt} - {mercado} - {monto_valor}")
+                        
+                    except Exception as e:
+                        registros_fallidos += 1
+                        print(f"❌ Error guardando registro {i}: {e}")
+                
+                i += 1
+            
+            # Registrar carga en Archivocarga si se guardó algo
+            if registros_guardados > 0:
+                Archivocarga.objects.create(
+                    tipo_archivo='pdf_calificaciones',
+                    fecha_carga=timezone.now(),
+                    estado='completado',
+                    archivo_url=request.POST.get('archivo_nombre', 'desconocido.pdf'),
+                    fk_id_usuario=usuario,
+                    registros_procesados=registros_guardados,
+                    registros_fallidos=registros_fallidos
+                )
+            
+            # Mensaje de resultado
+            if registros_guardados > 0:
+                messages.success(request, 
+                    f'✅ {registros_guardados} registros guardados exitosamente desde PDF'
+                    + (f' ({registros_fallidos} fallidos)' if registros_fallidos > 0 else '')
+                )
+            else:
+                messages.warning(request, 
+                    'No se guardaron registros. '
+                    + ('Ninguno fue seleccionado.' if registros_fallidos == 0 else 'Todos los registros seleccionados tuvieron errores.')
+                )
+            
+            # Auditoría
+            Auditoria.objects.create(
+                accion='CARGA_PDF_GUARDADO',
+                fecha_hora=timezone.now(),
+                resultado=f'PDF guardado: {registros_guardados} exitosos, {registros_fallidos} fallidos',
+                fk_usuario=usuario
+            )
+            
             return redirect('dashboard_corredor')
-
+            
         except Exception as e:
-            messages.error(request, f"Error guardando datos: {str(e)}")
+            error_msg = f'Error guardando datos del PDF: {str(e)}'
+            messages.error(request, error_msg)
+            print(f"ERROR en guardar_datos_extraidos: {error_msg}")
+            
             return redirect('extraer_datos_pdf')
-
+    
     return redirect('extraer_datos_pdf')
 
 @require_GET
