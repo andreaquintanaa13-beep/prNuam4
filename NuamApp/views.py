@@ -509,23 +509,19 @@ def fix_passwords(request):
 def carga_factores(request):
     if request.method == 'POST':
         archivo_csv = request.FILES.get('archivo_csv')
-        
         if not archivo_csv:
             messages.error(request, 'Debes seleccionar un archivo CSV')
             return redirect('carga_factores')
-        
         if not archivo_csv.name.endswith('.csv'):
             messages.error(request, 'El archivo debe ser CSV')
             return redirect('carga_factores')
-        
         try:
-            data_set = archivo_csv.read().decode('UTF-8')
+            data_set = archivo_csv.read().decode('utf-8-sig')
             io_string = io.StringIO(data_set)
             reader = csv.DictReader(io_string)
-            
             required_columns = ['nombre_factor', 'valor_factor', 'fecha_inicio']
             if not all(col in reader.fieldnames for col in required_columns):
-                messages.error(request, f'El CSV debe contener las columnas: {", ".join(required_columns)}')
+                messages.error(request, f'El CSV debe contener: {", ".join(required_columns)}')
                 return redirect('carga_factores')
             
             usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
@@ -537,14 +533,11 @@ def carga_factores(request):
                 fk_id_usuario=usuario
             )
             
-            registros_procesados = 0
-            registros_fallidos = 0
-            
-            for row_num, row in enumerate(reader, start=2): 
+            registros_procesados, registros_fallidos = 0, 0
+            for row_num, row in enumerate(reader, start=2):
                 try:
                     fecha_inicio = datetime.strptime(row['fecha_inicio'], '%Y-%m-%d').date()
-                    fecha_fin = datetime.strptime(row['fecha_fin'], '%Y-%m-%d').date() if row.get('fecha_fin') else fecha_inicio
-                    
+                    fecha_fin = datetime.strptime(row.get('fecha_fin', row['fecha_inicio']), '%Y-%m-%d').date()
                     Factor.objects.create(
                         nombre_factor=row['nombre_factor'],
                         valor_factor=int(row['valor_factor']),
@@ -552,49 +545,42 @@ def carga_factores(request):
                         fecha_fin=fecha_fin
                     )
                     registros_procesados += 1
-                    
                 except Exception as e:
                     registros_fallidos += 1
-                    print(f"Error en fila {row_num}: {row} - Error: {e}")
+                    print(f"Fila {row_num} error: {e}")
             
             carga.estado = 'completado'
             carga.save()
-            
-            Auditoria.objects.create(
-                accion='CARGA_FACTORES',
-                fecha_hora=datetime.now(),
-                resultado=f'{registros_procesados} procesados, {registros_fallidos} fallidos',
-                fk_usuario=usuario
-            )
-            
-            messages.success(request, f'Carga completada: {registros_procesados} factores procesados, {registros_fallidos} fallidos')
-            return redirect('dashboard_admin' if request.session.get('rol') == 'admin' else 'dashboard_corredor')
-            
+            messages.success(request, f'{registros_procesados} factores procesados, {registros_fallidos} fallidos')
+            return redirect('dashboard_admin' if request.session.get('rol')=='admin' else 'dashboard_corredor')
+        
         except Exception as e:
-            messages.error(request, f'Error procesando archivo: {str(e)}')
+            messages.error(request, f'Error procesando CSV: {str(e)}')
             return redirect('carga_factores')
-    
+
     return render(request, 'template_cargas/carga_factor.html')
 
+
 @login_required_custom
-def carga_masiva_montos(request):
+def carga_montos(request):
     if request.method == 'POST':
         archivo_csv = request.FILES.get('archivo_csv')
-        
         if not archivo_csv:
             messages.error(request, 'Debes seleccionar un archivo CSV')
             return redirect('carga_montos')
-        
-        if not archivo_csv.name.endswith('.csv'):
-            messages.error(request, 'El archivo debe ser CSV')
-            return redirect('carga_montos')
-        
         try:
-            data_set = archivo_csv.read().decode('UTF-8')
+            data_set = archivo_csv.read().decode('utf-8-sig')
             io_string = io.StringIO(data_set)
-            reader = csv.DictReader(io_string)
+            delimiter = ';' if ';' in data_set.splitlines()[0] else ','
+            reader = csv.DictReader(io_string, delimiter=delimiter)
+            
+            required_columns = ['fecha','mercado','ano','monto','descripcion']
+            if not all(col in reader.fieldnames for col in required_columns):
+                messages.error(request, f'El CSV debe contener: {", ".join(required_columns)}')
+                return redirect('carga_montos')
             
             usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
+            corredor = Corredor.objects.get(fk_usuario=usuario)
             carga = Archivocarga.objects.create(
                 tipo_archivo='montos',
                 fecha_carga=datetime.now(),
@@ -602,46 +588,33 @@ def carga_masiva_montos(request):
                 archivo_url=archivo_csv.name,
                 fk_id_usuario=usuario
             )
-            
-            registros_procesados = 0
-            registros_fallidos = 0
-            
+
+            registros_procesados, registros_fallidos = 0, 0
             for row_num, row in enumerate(reader, start=2):
                 try:
-                    
-                    calificacion = Calificacion.objects.create(
+                    monto = float(row['monto'].replace('.', '').replace(',', '.'))
+                    Calificacion.objects.create(
                         fecha=datetime.strptime(row['fecha'], '%Y-%m-%d').date(),
                         mercado=row['mercado'],
                         ano=int(row['ano']),
-                        descripcion=row.get('descripcion', ''),
-                        factor_actualizado=float(row['monto']),
-                        fk_id_corredor=...  
+                        descripcion=row['descripcion'],
+                        factor_actualizado=monto,
+                        fk_id_corredor=corredor
                     )
-
                     registros_procesados += 1
-                    
                 except Exception as e:
                     registros_fallidos += 1
-                    print(f"Error en fila {row_num}: {e}")
-            
+                    print(f"Fila {row_num} error: {e}")
+
             carga.estado = 'completado'
             carga.save()
-            
-            Auditoria.objects.create(
-                accion='CARGA_MONTOS',
-                fecha_hora=datetime.now(),
-                resultado=f'{registros_procesados} montos procesados',
-                fk_usuario=usuario
-            )
-            
-            messages.success(request, f'Carga de montos completada: {registros_procesados} registros')
+            messages.success(request, f'{registros_procesados} montos procesados, {registros_fallidos} fallidos')
             return redirect('dashboard_admin')
-            
+        
         except Exception as e:
-            messages.error(request, f'Error: {str(e)}')
+            messages.error(request, f'Error procesando CSV: {str(e)}')
             return redirect('carga_montos')
-    
-    return render(request, 'template_cargas/template_carga_montos.html')
+    return render(request, 'template_cargas/carga_monto.html')
 
 @login_required_custom
 def listado_cargas(request):
@@ -765,19 +738,24 @@ def carga_masiva_montos(request):
 
 
 # En views.py
-@login_required_custom  
-def carga_masiva_calificaciones(request):
+@login_required_custom
+def carga_calificaciones(request):
     if request.method == 'POST':
         archivo_csv = request.FILES.get('archivo_csv')
-        
+        if not archivo_csv:
+            messages.error(request, 'Debes seleccionar un CSV')
+            return redirect('carga_calificaciones')
         try:
-            data_set = archivo_csv.read().decode('UTF-8')
+            data_set = archivo_csv.read().decode('utf-8-sig')
             io_string = io.StringIO(data_set)
             reader = csv.DictReader(io_string)
-            
+            required_columns = ['fecha','mercado','ano','descripcion','factor_actualizado']
+            if not all(col in reader.fieldnames for col in required_columns):
+                messages.error(request, f'CSV debe tener: {", ".join(required_columns)}')
+                return redirect('carga_calificaciones')
+
             usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
             corredor = Corredor.objects.get(fk_usuario=usuario)
-            
             carga = Archivocarga.objects.create(
                 tipo_archivo='calificaciones',
                 fecha_carga=datetime.now(),
@@ -785,29 +763,25 @@ def carga_masiva_calificaciones(request):
                 archivo_url=archivo_csv.name,
                 fk_id_usuario=usuario
             )
-            
-            registros_procesados = 0
-            
+
+            registros = 0
             for row in reader:
                 Calificacion.objects.create(
                     fecha=datetime.strptime(row['fecha'], '%Y-%m-%d').date(),
                     mercado=row['mercado'],
                     ano=int(row['ano']),
                     descripcion=row['descripcion'],
-                    factor_actualizado=float(row.get('factor_actualizado', 0)),
+                    factor_actualizado=float(row.get('factor_actualizado',0)),
                     fk_id_corredor=corredor
                 )
-                registros_procesados += 1
-            
+                registros += 1
             carga.estado = 'completado'
             carga.save()
-            
-            messages.success(request, f'{registros_procesados} calificaciones cargadas')
+            messages.success(request, f'{registros} calificaciones cargadas')
             return redirect('dashboard_corredor')
-            
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
-    
+            return redirect('carga_calificaciones')
     return render(request, 'template_cargas/template_carga_masiva.html')
 
 @login_required_custom
@@ -913,6 +887,48 @@ def carga_pdf_factores(request):
     
     return render(request, 'template_cargas/template_carga_pdf.html')
 
+@login_required_custom
+def carga_pdf(request):
+    if request.method == 'POST' and request.FILES.get('archivo_pdf'):
+        archivo_pdf = request.FILES['archivo_pdf']
+        try:
+            usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
+            corredor = Corredor.objects.get(fk_usuario=usuario)
+            datos_extraidos = []
+
+            with pdfplumber.open(archivo_pdf) as pdf:
+                for page_num, page in enumerate(pdf.pages, start=1):
+                    text = page.extract_text()
+                    if not text: continue
+                    matches = re.findall(
+                        r"(\d{4}-\d{2}-\d{2}).*?(Acciones|Bonos|Derivados|Monedas).*?Año[:\s]*(\d{4}).*?(?:Factor|Monto)[:\s]*([\d\.,]+)", 
+                        text, re.IGNORECASE
+                    )
+                    for fecha, mercado, ano, factor in matches:
+                        factor_val = float(factor.replace('.', '').replace(',', '.'))
+                        datos_extraidos.append({
+                            'fecha': fecha, 'mercado': mercado, 'ano': ano,
+                            'factor': factor_val, 'descripcion': f'PDF Página {page_num}'
+                        })
+
+            registros = 0
+            for d in datos_extraidos:
+                Calificacion.objects.create(
+                    fecha=datetime.strptime(d['fecha'], '%Y-%m-%d').date(),
+                    mercado=d['mercado'],
+                    ano=int(d['ano']),
+                    factor_actualizado=d['factor'],
+                    descripcion=d['descripcion'],
+                    fk_id_corredor=corredor
+                )
+                registros += 1
+
+            messages.success(request, f'{registros} registros extraídos del PDF')
+            return redirect('dashboard_corredor')
+        except Exception as e:
+            messages.error(request, f'Error procesando PDF: {str(e)}')
+            return redirect('carga_pdf')
+    return render(request, 'template_cargas/extraer_datos_pdf.html')
 
 # CRUD USUARIOS - ADMIN
 
@@ -1072,22 +1088,46 @@ def extraer_datos_pdf(request):
         try:
             usuario = Usuario.objects.get(id_usuario=request.session['usuario_id'])
             corredor = Corredor.objects.get(fk_usuario=usuario)
-
             datos_extraidos = []
 
+            # Abrimos el PDF
             with pdfplumber.open(archivo_pdf) as pdf:
                 for page_num, page in enumerate(pdf.pages, start=1):
                     text = page.extract_text()
+                    if not text:
+                        continue  # saltar página vacía
+                    
+                    # Patrón general: fecha, mercado, año, factor/monto
+                    matches = re.findall(
+                        r"(\d{4}-\d{2}-\d{2}).*?(Acciones|Bonos|Derivados|Monedas).*?Año[:\s]*(\d{4}).*?(?:Factor|Monto)[:\s]*([\d\.,]+)", 
+                        text, re.IGNORECASE
+                    )
 
-                    if text:
-                        calificaciones_encontradas = buscar_patrones_calificaciones(text, page_num)
-                        datos_extraidos.extend(calificaciones_encontradas)
+                    for fecha, mercado, ano, factor in matches:
+                        factor_val = float(factor.replace('.', '').replace(',', '.'))
+                        datos_extraidos.append({
+                            'fecha': fecha,
+                            'mercado': mercado,
+                            'ano': ano,
+                            'factor': factor_val,
+                            'descripcion': f'PDF Página {page_num}'
+                        })
 
-            return render(request, 'template_cargas/confirmar_datos.html', {
-                'datos_extraidos': datos_extraidos,
-                'nombre_archivo': archivo_pdf.name,
-                'corredor': corredor
-            })
+            # Guardar directamente en Calificacion
+            registros_guardados = 0
+            for dato in datos_extraidos:
+                Calificacion.objects.create(
+                    fecha=datetime.strptime(dato['fecha'], '%Y-%m-%d').date(),
+                    mercado=dato['mercado'],
+                    ano=int(dato['ano']),
+                    factor_actualizado=dato['factor'],
+                    descripcion=dato['descripcion'],
+                    fk_id_corredor=corredor
+                )
+                registros_guardados += 1
+
+            messages.success(request, f"{registros_guardados} registros guardados desde PDF")
+            return redirect('dashboard_corredor')
 
         except Exception as e:
             messages.error(request, f"Error procesando PDF: {str(e)}")
